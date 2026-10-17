@@ -1,0 +1,7 @@
+# Basis (Analyse-Pipeline, WebUI, Klang-Synthese, Looks)
+numpy>=1.26
+scipy>=1.11
+soundfile>=0.12
+pyyaml>=6.0
+opencv-python>=4.9
+pytest>=8.0

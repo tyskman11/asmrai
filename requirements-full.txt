@@ -1,0 +1,10 @@
+# KI-Pakete (Python 3.10-3.12). Entspricht der Umgebung von ..\SeriesAI\.venv.
+# PyTorch mit CUDA 12.4 (RTX-Karten); ohne NVIDIA-GPU stattdessen die CPU-Variante von https://pytorch.org waehlen.
+--extra-index-url https://download.pytorch.org/whl/cu124
+torch==2.6.0+cu124
+torchaudio==2.6.0+cu124
+faster-whisper>=1.0
+librosa>=0.10
+coqui-tts>=0.27
+speechbrain>=1.0
+transformers>=4.40,<4.58

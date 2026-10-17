@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASMRAI Dashboard</title>
+<style>
+:root{--bg:#0f0e17;--panel:#181726;--panel2:#201e33;--line:#2e2b47;--text:#e8e6f5;--mute:#9a97b8;--acc:#9d7bff;--acc2:#5ad1c5;--ok:#58d68d;--warn:#f5b041;--err:#ec7063;
+--silence:#3a3855;--speech:#f5b041;--tapping:#9d7bff;--brushing:#5ad1c5;--breath:#7fb3ff;--texture:#ec7fb0}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,Segoe UI,sans-serif}
+header{display:flex;align-items:center;gap:20px;padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header h1{font-size:18px;margin:0;color:var(--acc);letter-spacing:.5px}nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{background:none;border:0;color:var(--mute);padding:7px 12px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on,nav button:hover{background:var(--panel2);color:var(--text)}
+#jobpill{margin-left:auto;font-size:12px;color:var(--mute);cursor:pointer}#jobpill b{color:var(--acc2)}
+main{padding:20px;max-width:1280px;margin:0 auto}
+h2{font-size:16px;margin:0 0 12px}h3{font-size:14px;margin:18px 0 8px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.stat{font-size:26px;font-weight:600}.mute{color:var(--mute)}.small{font-size:12px}
+button.btn,.btn{background:var(--acc);color:#14102a;border:0;padding:7px 14px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600}
+button.sec{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.dng{background:none;color:var(--err);border:1px solid var(--err)}
+button:disabled{opacity:.45;cursor:default}
+input,select,textarea{background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:7px 9px;border-radius:8px;font:inherit;max-width:100%}
+input[type=checkbox]{accent-color:var(--acc)}label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mute)}
+.form{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));align-items:end}.wide{grid-column:1/-1}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--mute);font-weight:500;font-size:12px}
+tr.click{cursor:pointer}tr.click:hover{background:var(--panel2)}
+.chip{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;background:var(--panel2);border:1px solid var(--line);margin:1px}
+.chip.done{color:var(--ok);border-color:#2c5a43}.chip.error{color:var(--err);border-color:#6a3a35}.chip.queued,.chip.running{color:var(--acc2)}
+.bar{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.legend span{display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:12px}.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+canvas{width:100%;display:block;background:#12111d;border-radius:8px}pre{background:#12111d;border-radius:8px;padding:10px;max-height:300px;overflow:auto;font-size:12px;white-space:pre-wrap;margin:0}
+.thumbs{display:flex;gap:6px;flex-wrap:wrap}.thumbs img{height:80px;border-radius:6px}
+.notice{border-left:3px solid var(--warn);padding:8px 12px;background:#2a2417;border-radius:6px;font-size:12.5px;color:#e8d9b0;margin-bottom:14px}
+.modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:20}.modal>div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;width:min(620px,92vw);max-height:80vh;overflow:auto}
+.dir{padding:5px 8px;border-radius:6px;cursor:pointer}.dir:hover{background:var(--panel2)}
+a{color:var(--acc2)}audio,video{width:100%;margin-top:8px;border-radius:8px}.tl{display:flex;height:34px;border-radius:6px;overflow:hidden;background:#12111d}.tl>div{min-width:2px;position:relative}
+@media(max-width:760px){header{flex-wrap:wrap;gap:8px;padding:8px 12px}nav{width:100%;order:3}#jobpill{margin-left:auto}main{padding:12px}.card{overflow-x:auto}table{min-width:520px}.form{grid-template-columns:1fr}}
+.toast{position:fixed;bottom:18px;right:18px;background:var(--panel2);border:1px solid var(--line);padding:10px 16px;border-radius:10px;z-index:30}.toast.err{border-color:var(--err)}
+</style>
+</head>
+<body>
+<header><h1>ASMRAI</h1>
+<nav id="nav"></nav><div id="jobpill" onclick="go('jobs')"></div><button id="restartbtn" onclick="restartApp()" title="start.py im Terminal neu starten (Code-Änderungen übernehmen)" style="background:var(--panel2);color:var(--fg,#eee);border:1px solid var(--line);border-radius:8px;padding:5px 12px;cursor:pointer">⟳ Neustart</button></header>
+<main id="main"></main>
+<div id="modal"></div><div id="toast"></div>
+<script>
+const LABELS={silence:'Stille',speech:'Sprache/Flüstern',tapping:'Tapping',brushing:'Brushing',breath:'Atem',texture:'Textur'};
+const COL={silence:'#3a3855',speech:'#f5b041',tapping:'#9d7bff',brushing:'#5ad1c5',breath:'#7fb3ff',texture:'#ec7fb0'};
+const TABS={dash:'Übersicht',creators:'Creators',profile:'Stil-Profil',personas:'Personen',gen:'Generator',voices:'Stimmen & Figuren',jobs:'Jobs',sys:'System'};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=s=>document.querySelector(s);
+let tab=localStorage.tab||'dash', ctx={}, pollTimer=null;
+async function api(path,method='GET',body){
+  const r=await fetch(path,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+  const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||r.statusText); return j;}
+
+// ---- Fortschritt/ETA und Fehleranalyse (nur fehlgeschlagene Jobs) ----
+const fmtDur=s=>{s=Math.max(0,Math.round(s));if(s<60)return s+' s';const m=Math.round(s/60);return m<60?m+' min':Math.floor(m/60)+' h '+(m%60)+' min'};
+function jobTimes(all){const d={};all.filter(j=>j.status==='done'&&j.started&&j.finished).forEach(j=>(d[j.kind]||=[]).push(j.finished-j.started));
+ return Object.fromEntries(Object.entries(d).map(([k,v])=>{v.sort((a,b)=>a-b);return [k,v[Math.floor(v.length/2)]]}))}
+function jobEta(j,typ){if(j.status==='running'){const el=Date.now()/1000-(j.started||j.created);return (j.progress||0)>0.02?el*(1-j.progress)/j.progress:(typ[j.kind]!=null?typ[j.kind]*(1-(j.progress||0)):null)}
+ return j.status==='queued'?(typ[j.kind]??null):null}
+function jobProgressHtml(j,typ){const p=Math.round((j.progress||0)*100),e=jobEta(j,typ);
+ const txt=j.status==='done'?'100 %':j.status==='running'?`${p} %${e!=null?' · ETA '+fmtDur(e):''}`:j.status==='queued'?(e!=null?`wartet · ca. ${fmtDur(e)}`:'wartet'):`${p} %`;
+ return `<div class="mute small" style="margin-top:3px">${txt}</div>`}
+function jobSummaryHtml(all){const typ=jobTimes(all),live=all.filter(j=>['running','queued'].includes(j.status));if(!live.length)return '';
+ const since=Math.min(...live.map(j=>j.created)),fin=all.filter(j=>j.status==='done'&&(j.finished||0)>=since);
+ const total=live.length+fin.length,pct=Math.round((live.reduce((a,j)=>a+(j.progress||0),0)+fin.length)/total*100);
+ const per={};let unknown=false;live.forEach(j=>{const e=jobEta(j,typ);if(e==null)unknown=true;else per[j.kind]=(per[j.kind]||0)+e});   // Arten laufen parallel, gleiche Art nacheinander
+ const eta=Object.keys(per).length?(unknown?'mind. ':'')+fmtDur(Math.max(...Object.values(per))):'wird berechnet';
+ return `<div class="card"><b>Gesamtfortschritt: ${pct} %</b> · ${live.length} offen, ${fin.length} fertig · ETA ${eta}<div class="bar" style="margin-top:6px"><i style="width:${pct}%"></i></div></div>`}
+function closeDiagnose(){const m=document.getElementById('diagmodal');if(m)m.remove()}
+async function openDiagnose(){let d;try{d=await api('/api/jobs/diagnose','POST',{})}catch(e){return toast(e.message||String(e),true)}
+ closeDiagnose();const m=document.createElement('div');m.id='diagmodal';m.style.cssText='position:fixed;inset:0;background:#000b;z-index:40;overflow:auto;padding:24px';
+ m.innerHTML=`<div style="max-width:900px;margin:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px"><h2>Fehleranalyse (nur fehlgeschlagene Jobs) <button class="btn sec" onclick="closeDiagnose()">schließen</button></h2>`+
+ (d.groups.length?d.groups.map(g=>`<div class="card" style="margin-top:10px"><b>${esc(g.title)}</b> <b style="color:var(--err,#f66)">${g.count}×</b> <span class="mute small">${esc(g.kinds.join(', '))}</span>
+ <p>${esc(g.hint)}</p><p class="mute small">Jobs: ${g.jobs.slice(0,12).map(j=>'#'+j.id).join(', ')}${g.jobs.length>12?' …':''}</p>
+ <details><summary>Fehlermeldung / Log-Ende</summary><pre>${esc(g.trace)}</pre></details>
+ <div class="row" style="margin-top:8px"><button class="btn" onclick="retryGroup('${g.id}')">Alle ${g.count} erneut starten</button><button class="btn sec" onclick="explainGroup('${g.id}',this)">Mit lokalem LLM erklären</button></div><div id="dx${g.id}"></div></div>`).join(''):'<p>Keine fehlgeschlagenen Jobs.</p>')+'</div>';
+ document.body.appendChild(m);window._diag=d}
+async function retryGroup(id){const g=(window._diag?.groups||[]).find(x=>x.id===id);if(!g)return;await act(async()=>{for(const j of g.jobs)await api(`/api/jobs/${j.id}/retry`,'POST');toast(g.jobs.length+' Job(s) erneut gestartet');closeDiagnose();
+ if(typeof refreshJobs==='function'){await refreshJobs();renderJobs($('#main'))}else render()})}
+async function explainGroup(id,btn){const box=document.getElementById('dx'+id);btn.disabled=true;box.innerHTML='<p class="mute">LLM denkt nach …</p>';
+ try{const r=await api('/api/jobs/diagnose','POST',{llm:true,group:id});box.innerHTML=`<p style="white-space:pre-wrap">${esc(r.groups[0]?.explanation||'Keine Antwort.')}</p>`}catch(e){box.innerHTML=`<p class="mute">${esc(e.message)}</p>`}btn.disabled=false}
+async function restartApp(){
+  if(!confirm('ASMRAI neu starten?\nstart.py startet im Terminal neu (Code-Änderungen werden übernommen). Laufende Jobs werden unterbrochen und später fortgesetzt.'))return;
+  try{await api('/api/restart','POST')}catch(e){return toast(e.message||String(e),true)}
+  toast('Neustart läuft ...');
+  const t=setInterval(async()=>{try{const r=await fetch('/api/overview',{cache:'no-store'});if(r.ok){clearInterval(t);location.reload()}}catch{}},2000);
+}
+function toast(msg,err){const t=$('#toast');t.innerHTML=`<div class="toast ${err?'err':''}">${esc(msg)}</div>`;setTimeout(()=>t.innerHTML='',err?6000:3000);}
+async function act(fn){try{return await fn()}catch(e){toast(e.message,true)}}
+const fmt=s=>{s=Math.round(s||0);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return (h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+String(s%60).padStart(2,'0')};
+const chip=(n,s)=>`<span class="chip ${s||''}">${esc(n)}</span>`;
+function go(t){tab=t;localStorage.tab=t;const keep=ctx.persona;ctx={persona:keep};render()}
+function renderNav(){$('#nav').innerHTML=Object.entries(TABS).map(([k,v])=>`<button class="${k==tab?'on':''}" onclick="go('${k}')">${v}</button>`).join('')}
+
+async function render(){renderNav();const m=$('#main');try{await VIEWS[tab](m)}catch(e){m.innerHTML=`<div class="card">Fehler: ${esc(e.message)}</div>`}}
+
+async function refreshJobs(){
+  const jobs=await api('/api/jobs').catch(()=>[]); const act=jobs.filter(j=>['queued','running'].includes(j.status)).sort((a,b)=>(b.status==='running')-(a.status==='running'));
+  $('#jobpill').innerHTML=act.length?`<b>${act.length}</b> Job(s) aktiv: ${esc(act[0].title)} ${Math.round(act[0].progress*100)}%`:'Keine aktiven Jobs';
+  ctx.jobs=jobs; if(tab==='jobs'&&!ctx.openJob) renderJobs($('#main')); if(ctx.openJob) showJob(ctx.openJob);
+  if(act.length!==ctx.lastActive){ctx.lastActive=act.length; if(['creators','gen','dash'].includes(tab)&&!document.activeElement.matches('input,textarea,select')) render();}
+}
+setInterval(refreshJobs,2500);
+
+const VIEWS={
+async dash(m){const o=await api('/api/overview');const hrs=o.creators.reduce((a,c)=>a+c.hours,0);
+ m.innerHTML=`<div class="grid"><div class="card"><div class="mute">Creators</div><div class="stat">${o.creators.length}</div></div>
+ <div class="card"><div class="mute">Archiv gesamt</div><div class="stat">${hrs.toFixed(1)} h</div></div>
+ <div class="card"><div class="mute">Sessions</div><div class="stat">${o.sessions}</div></div>
+ <div class="card"><div class="mute">Stimmen</div><div class="stat">${o.voices}</div></div></div>
+ <div class="notice">So funktioniert ASMRAI: Aus den Videos eines Creators wird ein <b>statistisches Stil-Profil</b> gelernt (Tempo, Trigger-Mix, Lautstärke, Stereo-Bewegung, Sprechtempo).
+ Neue Sessions werden daraus <b>komplett neu synthetisiert</b> – mit eigenen Klängen und einer eingebauten oder von dir freigegebenen Stimme. Gesicht und Stimme des Creators werden nie geklont.</div>
+ <div class="card"><h2>Creators</h2>${o.creators.length?`<table><tr><th>Name</th><th>Videos</th><th>Analysiert</th><th>Transkribiert</th><th>Profil</th><th></th></tr>${o.creators.map(c=>`<tr class="click" onclick="ctx.cid=${c.id};go('creators')"><td>${esc(c.name)}</td><td>${c.videos} (${c.hours} h)</td><td>${c.analyzed}</td><td>${c.transcribed}</td><td>${c.has_profile?chip('bereit','done'):chip('fehlt')}</td><td class="mute">${c.sessions} Sessions</td></tr>`).join('')}</table>`:'<span class="mute">Noch kein Creator – unter „Creators“ einen Ordner hinzufügen.</span>'}</div>`;},
+
+async creators(m){
+ if(ctx.vid) return videoView(m);
+ if(ctx.cid) return creatorView(m);
+ const [cs,ib]=await Promise.all([api('/api/creators'),api('/api/inbox')]);
+ m.innerHTML=`<div class="card"><h2>Eingangsordner</h2><p class="mute small">${esc(ib.inbox||'')} – neue Videos werden ${ib.auto_analyze?'automatisch erkannt und analysiert':'erkannt, aber erst per Button analysiert'} (Prüfung alle ${ib.interval||60} s, Datei muss ${ib.settle_seconds||45} s unverändert sein).</p>
+ ${(ib.unassigned||[]).map(u=>`<div class="row" style="margin:6px 0"><span class="chip">neu</span><b>${esc(u.name)}</b><span class="mute">${u.videos} Videos</span><input id="ui_${btoa(unescape(encodeURIComponent(u.folder))).replace(/=/g,'')}" value="${esc(u.name)}" style="min-width:220px"><button class="btn" onclick='adoptFolder(${JSON.stringify(u.folder)},this.previousElementSibling.value)'>Als Creator anlegen</button></div>`).join('')||'<span class="mute small">Keine neuen, unzugeordneten Ordner.</span>'}
+ <div style="margin-top:8px"><button class="btn sec" onclick="act(async()=>{const r=await api('/api/inbox/scan','POST');toast(r.added+' neue Videos erkannt');render()})">Jetzt prüfen</button></div></div>
+ <div class="card"><h2>Creator hinzufügen</h2><div class="notice">Nur Material verwenden, an dem du die Rechte hast oder für das eine Erlaubnis vorliegt. Die Videos bleiben unverändert in ihrem Ordner; gespeichert werden nur Analysewerte.</div>
+ <div class="form"><label class="f">Name<input id="cn" placeholder="z. B. Poki ASMR"></label>
+ <label class="f wide">Ordner mit Videos<span class="row"><input id="cd" style="flex:1" placeholder="C:\\AI\\ASMRAI\\input\\…"><button class="btn sec" onclick="pickDir()">Durchsuchen…</button></span></label>
+ <div><button class="btn" onclick="addCreator()">Hinzufügen & scannen</button></div></div></div>
+ <div class="grid">${cs.map(c=>`<div class="card"><h2>${esc(c.name)}</h2><div class="mute small">${esc(c.source_dir)}</div>
+ <p>${c.videos} Videos · ${c.hours} h<br>Analysiert: ${c.analyzed} · Transkribiert: ${c.transcribed}${c.videos>c.analyzed?` · <b style="color:var(--warn)">${c.videos-c.analyzed} neu/offen</b>`:''}</p>
+ <div class="row"><button class="btn" onclick="ctx.cid=${c.id};render()">Öffnen</button><button class="btn sec" onclick="startProcess(${c.id})">${c.videos>c.analyzed?`Neue analysieren (${c.videos-c.analyzed})`:'Analyse starten'}</button>${c.failed?`<button class="btn dng" title="Nur die fehlgeschlagenen Videos erneut analysieren" onclick="retryFailedVideos(${c.id})">Fehlgeschlagene erneut (${c.failed})</button>`:''}</div></div>`).join('')}</div>`;},
+
+async profile(m){const cs=(await api('/api/creators')).filter(c=>c.has_profile);
+ if(!cs.length){m.innerHTML='<div class="card">Noch kein Profil. Erst einen Creator analysieren.</div>';return}
+ const id=ctx.pid||cs[0].id; const p=await api(`/api/creators/${id}/profile`);
+ const entries=Object.entries(p.labels||{}).sort((a,b)=>b[1].share-a[1].share);
+ m.innerHTML=`<div class="row" style="margin-bottom:12px"><select onchange="ctx.pid=+this.value;render()">${cs.map(c=>`<option value="${c.id}" ${c.id==id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+ <button class="btn sec" onclick="act(async()=>{await api('/api/creators/${id}/profile','POST');toast('Profil neu berechnet');render()})">Profil neu berechnen</button>
+ <span class="mute">${p.analyzed}/${p.videos} Videos analysiert · ${p.hours} h</span></div>
+ <div class="card"><h2>Zeitanteile je Trigger-Klasse</h2><div class="tl">${entries.map(([k,v])=>`<div style="flex:${v.share};background:${COL[k]}" title="${LABELS[k]} ${(v.share*100).toFixed(1)}%"></div>`).join('')}</div>
+ <div class="legend" style="margin-top:8px">${entries.map(([k,v])=>`<span><i style="background:${COL[k]}"></i>${LABELS[k]} ${(v.share*100).toFixed(1)}%</span>`).join('')}</div></div>
+ <div class="card"><h2>Klassen-Kennwerte</h2><table><tr><th>Klasse</th><th>Segmente</th><th>Dauer Ø / P90</th><th>Pegel dB</th><th>Helligkeit Hz</th><th>Onsets/s</th><th>Breite</th><th>|Pan|</th></tr>
+ ${entries.map(([k,v])=>`<tr><td>${LABELS[k]}</td><td>${v.segments}</td><td>${v.duration.mean}s / ${v.duration.p90}s</td><td>${v.rms_db}</td><td>${Math.round(v.centroid)}</td><td>${v.onset_rate}</td><td>${v.width}</td><td>${v.pan_abs}</td></tr>`).join('')}</table>
+ <p class="mute small">Gesamtpegel ${p.loudness_db} dB · Rauschboden ${p.noise_floor_db} dB. Klassen sind regelbasierte Schätzungen aus dem Audiosignal (kein trainiertes Modell).</p></div>
+ <div class="grid"><div class="card"><h2>Sprache</h2><p>Transkribiert: ${p.speech.transcribed} Videos<br>Sprachen: ${esc(JSON.stringify(p.speech.languages))}<br>Sprechtempo: ${p.speech.words_per_min??'–'} Wörter/min</p>
+ <div>${(p.speech.top_words||[]).slice(0,30).map(w=>chip(w)).join('')}</div></div>
+ <div class="card"><h2>Bild</h2><p>Auflösung: ${p.visual.resolution??'–'} · ${p.visual.fps??'–'} fps<br>Schnitte/min: ${p.visual.cut_rate_per_min??'–'}<br>Helligkeit: ${p.visual.brightness??'–'}</p></div></div>
+ ${triggerLibrary(p,'c'+id)}
+ ${visualTriggers(p.visual_triggers)}
+ <div class="card"><h2>Übergangswahrscheinlichkeiten</h2><table><tr><th>von \\ nach</th>${Object.keys(LABELS).map(k=>`<th>${LABELS[k]}</th>`).join('')}</tr>
+ ${Object.entries(p.transitions||{}).map(([a,row])=>`<tr><td>${LABELS[a]||a}</td>${Object.keys(LABELS).map(b=>`<td>${row[b]?Math.round(row[b]*100)+'%':''}</td>`).join('')}</tr>`).join('')}</table></div>`;},
+
+async gen(m){
+ const [cs,vs,chars,ss,md]=await Promise.all([api('/api/creators'),api('/api/voices'),api('/api/characters'),api('/api/sessions'),api('/api/models')]);
+ ctx.voices=vs; ctx.chars=chars; ctx.md=md;
+ m.innerHTML=ctx.sid?await sessionView():`<div class="card"><h2>Neue Session</h2><div class="form" id="gf">
+ <label class="f">Name<input id="g_name" placeholder="optional"></label>
+ <label class="f">AI-Modell<select id="g_persona" onchange="fillStyles()"><option value="">(keins – nur Klänge/Ambient)</option>${md.models.map(m=>`<option value="${m.slug}" ${ctx.persona==m.slug?'selected':''}>${esc(m.name)} · ${m.usable_looks} Looks${m.voice_model?' · Stimm-Modell':''}${m.look_model?' · Look-Modell':''}</option>`).join('')}</select></label>
+ <label class="f">Stil<select id="g_creator"><option value="">(automatisch: Fusion des AI-Modells, sonst Standard)</option><option value="fusion">Fusion aller Creator (AI-Modell)</option><option value="default">Standard-Stil (ohne Creator)</option>${cs.filter(c=>c.has_profile).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label>
+ <label class="f">Dauer (Minuten)<input id="g_dur" type="number" min="0.5" max="120" step="0.5" value="10"></label>
+ <label class="f">Sprache<select id="g_lang">${['en','de','fr','es','it','pt','nl','pl','ja','ko'].map(l=>`<option>${l}</option>`).join('')}</select></label>
+ <label class="f">Seed<input id="g_seed" type="number" placeholder="zufällig"></label>
+ <label class="f">Tempo (1 = wie Profil)<input id="g_pace" type="number" min="0.5" max="2.5" step="0.1" value="1"></label>
+ <label class="f wide">Thema / Stimmung<input id="g_theme" placeholder="z. B. regnerische Nacht, gemütliche Hütte"></label>
+ <label class="f">Sprache/Flüstern<select id="g_speech"><option value="1">an</option><option value="0">aus (nur Klänge)</option></select></label>
+ <label class="f">Sprachanteil (0–0,6)<input id="g_share" type="number" min="0" max="0.6" step="0.05" placeholder="wie Profil"></label>
+ <label class="f">Stimme<select id="g_voice"><option value="">(Stimme des AI-Modells)</option>${vs.map(v=>`<option value="${esc(v.id)}">${esc(v.name)}${v.kind=='own'?' (eigene)':''}</option>`).join('')}</select></label>
+ <label class="f">Entspannung (leer = Standard)<input id="g_relax" type="number" min="0" max="1" step="0.1" placeholder="0.3 – 0.6"></label>
+ <label class="f">Look-Style (Gesicht/Frisur)<select id="g_style"><option value="">(alle Styles des Modells)</option>${((md.models.find(x=>x.slug==ctx.persona)||{}).styles||[]).map(s=>`<option>${esc(s)}</option>`).join('')}</select></label>
+ <label class="f">Gesicht: Creator-Referenz<select id="g_face"><option value="">(Looks des AI-Modells)</option>${chars.filter(c=>c.includes('_face_')).map(c=>`<option>${esc(c)}</option>`).join('')}</select></label>
+ <label class="f">Flüster-Grad (0–1)<input id="g_whisper" type="number" min="0" max="1" step="0.05" value="0.85"></label>
+ <div class="wide row"><span class="mute">Trigger:</span>${['tapping','brushing','scratching','breath','crinkle'].map(t=>`<label><input type="checkbox" class="g_trig" value="${t}" checked> ${t}</label>`).join('')}</div>
+ <div class="wide row"><span class="mute">Tapping-Material:</span>${['wood','plastic','glass','nails','metal','skin'].map(t=>`<label><input type="checkbox" class="g_mat" value="${t}" ${['wood','plastic','glass'].includes(t)?'checked':''}> ${t}</label>`).join('')}</div>
+ <div><button class="btn" onclick="createSession()">Plan erstellen</button></div></div></div>
+ <div class="card"><h2>Sessions</h2>${ss.length?`<table><tr><th>#</th><th>Name</th><th>Stil</th><th>Dauer</th><th>Status</th><th></th></tr>${ss.map(s=>`<tr class="click" onclick="ctx.sid=${s.id};render()"><td>${s.id}</td><td>${esc(s.name)}</td><td>${esc(s.creator||'Standard')}</td><td>${s.params.duration_min} min</td><td>${chip(s.status,s.status.includes('ready')?'done':s.status=='error'?'error':'')} ${s.has_audio?'♪':''} ${s.has_video?'▶':''}</td><td></td></tr>`).join('')}</table>`:'<span class="mute">Noch keine Sessions.</span>'}</div>`;},
+
+async personas(m){const [ps,cs,vs,chars,md]=await Promise.all([api('/api/personas'),api('/api/creators'),api('/api/voices'),api('/api/characters'),api('/api/models')]);
+ const T=['tapping','brushing','scratching','breath','crinkle','speech'];
+ m.innerHTML=`<div class="notice">Eine Person ist deine eigene virtuelle Figur: festes Aussehen (Referenzbild + Beschreibung), eigene Stimme, Trigger-Repertoire und ein Stil, den sie von einem Creator übernimmt. Sie darf <b>keine reale Person nachbilden</b>; Stimmen brauchen eine dokumentierte Einwilligung.</div>
+ ${modelsCard(md,vs,cs)}
+ <div class="card"><h2>Eigene Person erfinden</h2><p class="mute small">Erzeugt eine frei erfundene, erwachsene virtuelle ASMR-Creatorin/-Creator (Name, Aussehen, Persönlichkeit, Setting, Trigger-Repertoire). Keine reale Person als Vorbild.</p>
+ <div class="form"><label class="f wide">Wünsche (optional)<input id="gen_hints" placeholder="z. B. ruhig, Bibliothek, Brille, Fokus auf Tapping und Flüstern"></label>
+ <div><button class="btn" onclick="generatePersona()">Person generieren</button></div></div></div>
+ <div class="grid">${ps.map(p=>`<div class="card"><h2>${esc(p.name)}${p.age?` <span class="mute small">(${p.age})</span>`:''}</h2>
+ ${p.image?`<img src="/media/person/${p.slug}/image.jpg?${encodeURIComponent(p.image)}" style="width:100%;max-height:260px;object-fit:cover;border-radius:8px;margin-bottom:8px" onerror="this.remove()">`:'<span class="chip error">noch kein Porträt</span>'}
+ <p class="small">${esc(p.appearance||'–')}</p>${p.personality?`<p class="small"><b>Wesen:</b> ${esc(p.personality)}</p>`:''}${p.setting?`<p class="small"><b>Setting:</b> ${esc(p.setting)}</p>`:''}
+ ${p.backstory?`<p class="mute small">${esc(p.backstory)}</p>`:''}${p.catchphrases.length?`<p class="small mute">„${p.catchphrases.map(esc).join('“ · „')}“</p>`:''}
+ <p class="mute small">Stimme: ${esc(p.voice||'Standard')} · Stil: ${esc(p.style_creator||'Standard')}${p.voice_model?` · Stimm-Modell: ${esc(p.voice_model)}`:''}${p.look_model?` · Look-Modell: ${esc(p.look_model)}`:''}</p>
+ <div>${p.triggers.map(t=>chip(t)).join('')||'<span class="mute small">alle Trigger</span>'}</div>
+ <div class="row" style="margin-top:10px"><button class="btn" onclick="ctx.persona='${p.slug}';go('gen')">Session mit ${esc(p.name)}</button>
+ <button class="btn sec" onclick="renamePersona('${p.slug}','${esc(p.name).replace(/'/g,'')}')">Umbenennen</button>
+ <button class="btn sec" onclick="makePortrait('${p.slug}')">${p.image?'Porträt neu erzeugen':'Porträt erzeugen'}</button><button class="btn dng" onclick="delPersona('${p.slug}')">Löschen</button></div></div>`).join('')}</div>
+ <div class="card"><h2>Person anlegen / ändern</h2><div class="form"><label class="f">Name<input id="p_name"></label>
+ <label class="f">Referenzbild (eigene/KI-Figur)<select id="p_img"><option value="">(keins)</option>${chars.map(c=>`<option>${esc(c)}</option>`).join('')}</select></label>
+ <label class="f">Stimme<select id="p_voice"><option value="">(Standard)</option>${vs.map(v=>`<option value="${esc(v.id)}">${esc(v.name)}${v.kind=='own'?' (eigene)':''}</option>`).join('')}</select></label>
+ <label class="f">Stil von<select id="p_style"><option value="">(Standard)</option>${cs.filter(c=>c.has_profile).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label>
+ <label class="f wide">Aussehen (für Bild-Prompts, ohne reale Namen)<input id="p_app" placeholder="z. B. a young woman with silver bob hair, soft knit sweater, round glasses"></label>
+ <div class="wide row"><span class="mute">Trigger-Repertoire:</span>${T.map(t=>`<label><input type="checkbox" class="p_trig" value="${t}" checked> ${t}</label>`).join('')}</div>
+ <div><button class="btn" onclick="savePersona()">Speichern</button></div></div></div>`;},
+
+async voices(m){const [vs,chars]=await Promise.all([api('/api/voices'),api('/api/characters')]);
+ m.innerHTML=`<div class="notice">Für Sprachausgabe gibt es nur <b>eingebaute synthetische Sprecher</b> oder <b>eigene Stimmen</b>, die du mit Einwilligung der sprechenden Person registrierst. Aufnahmen aus den Creator-Archiven können hier nicht als Stimmvorlage dienen.</div>
+ <div class="card"><h2>Stimmen</h2><table><tr><th>Name</th><th>Art</th><th>Besitzer</th><th></th></tr>${vs.map(v=>`<tr><td>${esc(v.name)}</td><td>${v.kind=='own'?'eigene ('+v.samples+' Proben)':'eingebaut'}</td><td>${esc(v.owner||'–')}</td><td>${v.kind=='own'?`<button class="btn dng" onclick="delVoice('${esc(v.id.slice(4))}')">Löschen</button>`:''}</td></tr>`).join('')}</table></div>
+ <div class="card"><h2>Eigene Stimme registrieren</h2><div class="form"><label class="f">Name der Stimme<input id="v_name"></label><label class="f">Sprecher:in (Besitzer:in)<input id="v_owner"></label>
+ <label class="f">Saubere Aufnahmen (WAV/MP3, 6–30 s)<input id="v_files" type="file" accept="audio/*" multiple></label>
+ <label class="wide row"><input type="checkbox" id="v_consent"> Die sprechende Person hat der Nutzung ihrer Stimme für diese Zwecke zugestimmt (oder ich bin es selbst).</label>
+ <div><button class="btn" onclick="addVoice()">Registrieren</button></div></div></div>
+ <div class="card"><h2>Figuren-Referenzbilder (für ComfyUI-Video)</h2><div class="thumbs">${chars.map(c=>`<span class="chip">${esc(c)}</span>`).join('')||'<span class="mute">Keine.</span>'}</div>
+ <div class="form" style="margin-top:12px"><label class="f">Bild (JPG/PNG)<input id="c_file" type="file" accept="image/png,image/jpeg"></label>
+ <label class="wide row"><input type="checkbox" id="c_consent"> Es handelt sich um eine eigene bzw. KI-generierte Figur, oder die abgebildete Person hat zugestimmt.</label>
+ <div><button class="btn" onclick="addChar()">Hochladen</button></div></div></div>`;},
+
+async jobs(m){ctx.jobs=await api('/api/jobs?limit=500');renderJobs(m)},
+
+async sys(m){const d=await api('/api/doctor'); const lg=ctx.logname||'errors'; const logs=await api(`/api/logs?name=${lg}&lines=300`);
+ m.innerHTML=`<div class="card"><h2>System-Check</h2><table>${Object.entries(d).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v?chip(v,'done'):chip('fehlt','error')}</td></tr>`).join('')}</table>
+ <p class="mute small">ComfyUI und das lokale LLM (llama.cpp) sind optional (KI-Video bzw. LLM-Skripte). Ohne sie funktionieren Analyse, Audio-Synthese und Ambient-Video weiterhin.</p></div>
+ <div class="card"><h2>Logs</h2><div class="row" style="margin-bottom:8px">${[['errors','Fehler'],['analysis','Analyse'],['asmrai','Alles']].map(([k,n])=>`<button class="btn sec" style="${lg===k?'outline:2px solid var(--acc)':''}" onclick="ctx.logname='${k}';render()">${n}</button>`).join('')}
+ <button class="btn sec" onclick="render()">Aktualisieren</button><span class="mute small">Dateien: logs/${lg}.log – dieselben Zeilen siehst du live im Terminal.</span></div>
+ <pre style="max-height:420px">${esc(logs.text||'(leer – keine Einträge)')}</pre></div>`}
+};
+
+const ANGLES={front:'frontal',three_quarter:'¾',profile:'Profil',back:'Rücken',unknown:'?'};
+function fusionBox(m,cs){
+ const usable=cs.filter(c=>c.has_profile);
+ const fu=m.fusion;
+ return `<details style="margin:8px 0" ${fu?'':'open'}><summary class="mute">Imaginärer Creator (Stil-Fusion) ${fu?'– aktiv':'– noch nicht gebaut'}</summary>
+ <p class="mute small">Verschmilzt die Stile <b>aller</b> analysierten Creator (Trigger-Mix, Dauern, Pegel, Übergänge, Sprechtempo, Bild-Katalog) zu <b>einem</b> Stil und mischt – wenn freigegebene Stimmen vorhanden sind – deren Stimmen zu einer entspannten Stimme. Zusammen mit den Looks dieses Modells ist das dein imaginärer ASMR-Creator. Im Generator gilt dann automatisch „Fusion".</p>
+ ${fu?`<div class="small" style="margin:6px 0">${Object.entries(fu.labels).sort((a,b)=>b[1]-a[1]).map(([k,v])=>chip((LABELS[k]||k)+' '+Math.round(v*100)+' %')).join('')}<div class="mute">aus: ${fu.creators.map(c=>esc(c.creator)+' '+Math.round(c.weight*100)+' %').join(', ')} · ${fu.hours} h Material</div></div>`:''}
+ <div class="form">${usable.length?usable.map(c=>`<label class="f">${esc(c.name)} <span class="mute">(${c.analyzed}/${c.videos} Videos, ${c.hours} h)</span><input type="number" min="0" step="0.1" class="fw_${m.slug}" data-id="${c.id}" value="${c.hours||1}"></label>`).join(''):'<div class="wide mute small">Noch kein Creator analysiert. Erst unter „Creators" die Analyse starten.</div>'}
+ <label class="row wide"><input type="checkbox" id="fv_${m.slug}" checked> Stimmen zu einer entspannten Stimme mischen (nur freigegebene)</label>
+ <label class="row wide"><input type="checkbox" id="ft_${m.slug}" checked> Trigger-Repertoire des Modells an den Mix anpassen</label>
+ <div><button class="btn" ${usable.length?'':'disabled'} onclick="startFusion('${m.slug}')">Imaginären Creator bauen</button></div></div></details>`}
+async function startFusion(slug){await act(async()=>{const weights={};document.querySelectorAll('.fw_'+slug).forEach(e=>{if(+e.value>0)weights[e.dataset.id]=+e.value});
+ await api(`/api/models/${slug}/fusion`,'POST',{weights,blend_voice:$('#fv_'+slug).checked,adapt_triggers:$('#ft_'+slug).checked});toast('Fusion gestartet – Schritte im Terminal und unter Jobs');refreshJobs()})}
+function blendBox(m,vs){
+ const usable=vs.filter(v=>v.kind!=='blend'&&v.consent);
+ return `<details style="margin:8px 0"><summary class="mute">Stimme mischen (${m.blends.length} Mix${m.blends.length==1?'':'e'})</summary>
+ <p class="mute small">Mischt Stimmen zu einer neuen, ruhigen Stimme für dieses Modell (gewichteter Mittelwert der Sprecher-Merkmale; nur freigegebene Stimmen). „Alle freigegebenen“ nimmt jede eigene Stimme mit Einwilligung plus eine weiche eingebaute Grundstimme. Reicht der GPU-Speicher nicht, läuft XTTS automatisch im RAM – das dauert länger.</p>
+ <div class="form"><label class="f">Name<input id="bn_${m.slug}" value="Entspannter Mix"></label>
+ <label class="f">Entspannung (0–1)<input id="br_${m.slug}" type="number" min="0" max="1" step="0.1" value="0.6"></label>
+ <label class="row wide"><input type="checkbox" id="ba_${m.slug}" checked> Alle freigegebenen Stimmen verwenden (+ weiche Grundstimme)</label>
+ <div class="wide small">${usable.map(v=>`<label style="margin-right:12px"><input type="checkbox" class="bs_${m.slug}" value="${esc(v.id)}"> ${esc(v.name)}${v.kind==='own'?' (eigene)':''}</label>`).join('')}</div>
+ <div><button class="btn" onclick="startBlend('${m.slug}')">Stimme mischen</button></div></div>
+ ${m.blends.map(b=>`<div class="row small" style="margin-top:6px"><b>${esc(b)}</b><audio controls preload="none" src="/media/blend/${m.slug}/${esc(b)}.wav" style="max-width:420px"></audio></div>`).join('')}</details>`}
+async function startBlend(slug){await act(async()=>{const chosen=[...document.querySelectorAll('.bs_'+slug+':checked')].map(e=>({voice:e.value,weight:1}));
+ const all=$('#ba_'+slug).checked; if(!all&&!chosen.length) throw new Error('Mindestens eine Stimme wählen oder „Alle freigegebenen“ aktivieren');
+ await api(`/api/models/${slug}/voice-blend`,'POST',{name:$('#bn_'+slug).value,relax:+$('#br_'+slug).value,use_all:all,sources:all?[]:chosen,set_default:true});
+ toast('Mischen gestartet – Fortschritt im Terminal und unter Jobs');refreshJobs()})}
+function fillStyles(){const m=(ctx.md?.models||[]).find(x=>x.slug==$('#g_persona').value);$('#g_style').innerHTML='<option value="">(alle Styles des Modells)</option>'+(m?m.styles.map(s=>`<option>${esc(s)}</option>`).join(''):'')}
+function modelsCard(md,vs,cs){
+ const by={};md.looks.forEach(l=>(by[l.persona_slug]=by[l.persona_slug]||[]).push(l));
+ const thumbs=l=>`<div style="width:150px"><img src="/media/look/${l.id}/frame.jpg" style="height:90px;width:150px;object-fit:cover">
+ <div class="small">${chip(ANGLES[l.angle]||l.angle)}${l.has_face?'':chip('kein Gesicht','error')}</div>
+ <input value="${esc(l.hair||'')}" placeholder="Frisur" style="width:100%;font-size:12px;padding:3px" onchange="saveLook(${l.id},{hair:this.value})">
+ <div class="row"><select style="font-size:12px;padding:2px" onchange="saveLook(${l.id},{angle:this.value})">${Object.entries(ANGLES).map(([k,v])=>`<option value="${k}" ${l.angle==k?'selected':''}>${v}</option>`).join('')}</select>
+ <button class="btn dng" style="padding:2px 6px" onclick="delLook(${l.id})">×</button></div></div>`;
+ const looksOf=m=>{const g={};(by[m.slug]||[]).forEach(l=>(g[l.group_name]=g[l.group_name]||[]).push(l));
+  return Object.entries(g).map(([st,items])=>`<h3>${esc(st)} <span class="mute small">(${items.length})</span></h3><div class="thumbs">${items.map(thumbs).join('')}</div>`).join('')||'<p class="mute small">Noch keine Looks importiert.</p>'};
+ return `<div class="card"><h2>AI-Modelle <span class="mute small">(${md.models.length})</span></h2>
+ <p class="mute small">${esc(md.root)} – <b>ein Ordner = ein AI-Modell</b> (eine Person). Im Modell-Ordner liegen deine Bilder (Unterordner = Style, z. B. „bun“ oder „curly hair“); alles, was die Software dazu erzeugt, liegt in <code>_data</code> im selben Ordner. Neue Bilder kannst du jederzeit nachlegen. Im Generator wählst du das Modell aus.</p>
+ <div class="row" style="margin-bottom:10px"><button class="btn sec" onclick="newModel()">+ Neues AI-Modell</button>${md.pending?`<button class="btn" onclick="importLooks()">${md.pending} neue Bilder in allen Modellen importieren</button>`:''}</div>
+ ${md.models.map(m=>`<div class="card" style="background:var(--panel2)"><h2>${esc(m.name)} <span class="mute small">Ordner: ${esc(m.folder)}</span></h2>
+ <div class="row small">${chip(m.images+' Bilder')}${chip(m.looks+' Looks ('+m.usable_looks+' nutzbar)')}${m.main_image?chip('Hauptbild','done'):chip('kein Hauptbild','error')}${m.voice_model?chip('Stimm-Modell','done'):chip('kein Stimm-Modell')}${m.look_model?chip('Look-Modell','done'):chip('kein Look-Modell')}</div>
+ <div class="row" style="margin:8px 0"><button class="btn" ${m.pending?'':'disabled'} onclick="importLooks('${m.slug}')">${m.pending?`${m.pending} neue Bilder importieren`:'Alles importiert'}</button>
+ <button class="btn sec" onclick="ctx.persona='${m.slug}';go('gen')">Im Generator verwenden</button></div>${fusionBox(m,cs)}${blendBox(m,vs)}${looksOf(m)}</div>`).join('')||'<p class="mute small">Noch kein Modell – „+ Neues AI-Modell“ klicken oder einen Ordner in ai_models anlegen.</p>'}</div>`;}
+async function newModel(){const n=prompt('Name des neuen AI-Modells (wird der Ordnername):');if(!n)return;await act(async()=>{await api('/api/models','POST',{name:n});toast('Ordner angelegt – Bilder dort hineinlegen und importieren');render()})}
+async function importLooks(slug){await act(async()=>{await api(slug?`/api/models/${slug}/import`:'/api/models/import','POST');toast('Import gestartet');refreshJobs()})}
+async function saveLook(id,d){await act(()=>api('/api/looks/'+id,'POST',d))}
+async function delLook(id){if(confirm('Look entfernen? (Originalbild im Ordner bleibt)'))await act(async()=>{await api('/api/looks/'+id,'DELETE');render()})}
+function triggerLibrary(p,who){
+ const lib=p.trigger_library||[];
+ if(!lib.length) return `<div class="card"><h2>Trigger-Bibliothek</h2><span class="mute">Noch nicht erkannt – die Stufe „triggers" läuft bei der Analyse nach der Segmentierung. Danach „Profil neu berechnen".</span></div>`;
+ return `<div class="card"><h2>Trigger-Bibliothek <span class="mute small">(${lib.length} erkannte Trigger – der Generator baut sie nach)</span></h2>
+ <table><tr><th>Trigger</th><th>Anteil</th><th>Seg.</th><th>Resonanz</th><th>Abkling</th><th>Rate</th><th>Regelm.</th><th>Nachbau</th><th>Original</th></tr>
+ ${lib.map(t=>{const r=t.recipe,ex=t.examples[0];return `<tr><td><b>${esc(t.name)}</b><div class="mute small">${esc(t.kind)}${r.material?' · '+esc(r.material):''}</div></td><td>${Math.round(t.share*100)} %</td><td>${t.segments}</td>
+ <td>${Math.round(r.resonance_hz)} Hz</td><td>${Math.round(r.decay_ms)} ms</td><td>${r.onset_rate}/s</td><td>${r.rate_cv<0.45?'gleichmäßig':r.rate_cv<0.9?'locker':'frei'}</td>
+ <td><audio controls preload="none" src="/media/trigger-demo/${who}/${encodeURIComponent(t.name)}.wav" style="height:28px;width:200px"></audio></td>
+ <td>${ex?`<audio controls preload="none" src="/media/trigger-sample/${ex.video_id}/${ex.start}/${ex.end}.wav" style="height:28px;width:200px"></audio>`:''}</td></tr>`}).join('')}</table>
+ <p class="mute small">„Nachbau" ist der aus dem Rezept synthetisierte Trigger, „Original" ein Ausschnitt aus dem Quellvideo (nur lokal) zum Vergleich. ${(p.speech&&p.speech.phrases&&p.speech.phrases.length)?`<br>Häufige gesprochene Phrasen: ${p.speech.phrases.map(esc).join(' · ')}`:''}</p></div>`}
+function visualTriggers(v){
+ if(!v||!v.frames) return `<div class="card"><h2>Sichtbare Trigger</h2><span class="mute">Noch nicht analysiert – in der Creator-Ansicht „Visuelle Trigger (Vision-Modell)“ aktivieren und die Analyse starten.</span></div>`;
+ const bars=(o)=>Object.entries(o).map(([k,x])=>`<tr><td>${esc(k)}</td><td style="width:60%"><div class="bar"><i style="width:${Math.round(x*100)}%"></i></div></td><td>${Math.round(x*100)}%</td></tr>`).join('');
+ return `<div class="card"><h2>Sichtbare Trigger <span class="mute small">(${v.frames} Frames aus ${v.videos} Videos)</span></h2><div class="grid">
+ <div><h3>Trigger</h3><table>${bars(v.triggers)}</table></div><div><h3>Requisiten</h3><table>${bars(v.props)}</table></div>
+ <div><h3>Einstellung</h3><table>${bars(v.framing)}</table><h3>Licht</h3><table>${bars(v.lighting)}</table><h3>Umgebung</h3><table>${bars(v.settings)}</table></div></div>
+ <p class="mute small">Daraus entstehen die Bild-Prompts für ComfyUI-Videos mit deiner eigenen Figur. Die Person selbst wird nicht beschrieben oder nachgebildet.</p></div>`;}
+const JSTATE={done:['Fertig','done'],error:['Fehler','error'],canceled:['Abgebrochen',''],interrupted:['Unterbrochen',''],queued:['Wartet','queued'],running:['Läuft','running']};
+function renderJobs(m){
+ const all=ctx.jobs||[]; const typ=jobTimes(all); const f=ctx.jfilter||'all'; const part=f==='all'?all:all.filter(j=>j.status===f);
+ // Reihenfolge wie die Warteschlange: laufende zuerst (Nr. 1), dann wartende nach Vorrang und Eingang (Nr. 2, 3, ...), danach beendete (neueste zuerst)
+ const live=j=>j.status==='running'||j.status==='queued';
+ const queueOrder=all.filter(live).sort((a,b)=>(b.status==='running')-(a.status==='running')||(b.priority||0)-(a.priority||0)||a.id-b.id);
+ const pos=Object.fromEntries(queueOrder.map((j,i)=>[j.id,i+1]));
+ const js=[...part].sort((a,b)=>(live(b)-live(a))||(live(a)?pos[a.id]-pos[b.id]:b.id-a.id));
+ const n=s=>all.filter(j=>j.status===s).length, fin=['done','error','canceled','interrupted'].reduce((a,s)=>a+n(s),0);
+ const failedJobs=n('error');
+ const btn=(s,label,cls)=>n(s)?`<button class="btn ${cls}" onclick="clearJobs(['${s}'])">${label} löschen (${n(s)})</button>`:'';
+ m.innerHTML=jobSummaryHtml(all)+`<div class="card"><h2>Jobs</h2>
+ <div class="row" style="margin-bottom:10px">${['all',...Object.keys(JSTATE)].map(s=>`<button class="btn sec" style="${f===s?'outline:2px solid var(--acc)':''}" onclick="ctx.jfilter='${s}';renderJobs($('#main'))">${s==='all'?'Alle':JSTATE[s][0]} (${s==='all'?all.length:n(s)})</button>`).join('')}</div>
+ <div class="row" style="margin-bottom:12px">${failedJobs?`<button class="btn" title="Nur Jobs mit Status Fehler erneut starten (Analysen setzen fehlende Stufen fort)" onclick="retryFailedJobs()">Fehlgeschlagene Jobs erneut starten (${failedJobs})</button>`:''}${n('error')?`<button class="btn" onclick="openDiagnose()" title="Gruppiert nur die fehlgeschlagenen Jobs und nennt Ursache und Gegenmaßnahme">Fehler analysieren (${n('error')})</button>`:''}<span class="mute small">Aufräumen:</span>${btn('done','Fertige','sec')}${btn('error','Fehlgeschlagene','dng')}${btn('canceled','Abgebrochene','sec')}${btn('interrupted','Unterbrochene','sec')}
+ ${fin?`<button class="btn dng" onclick="clearJobs(['done','error','canceled','interrupted'])">Alle beendeten löschen (${fin})</button>`:'<span class="mute small">nichts zu löschen</span>'}</div>
+ <table><tr><th title="Position in der Warteschlange (1 = läuft gerade)">Nr.</th><th>Titel</th><th>Status</th><th style="width:26%">Fortschritt</th><th></th></tr>
+ ${js.map(j=>{const fin=['done','error','canceled','interrupted'].includes(j.status);return `<tr><td title="Job-ID ${j.id}">${live(j)?pos[j.id]:'–'}</td><td>${esc(j.title)}</td><td>${chip(JSTATE[j.status]?.[0]||j.status,JSTATE[j.status]?.[1])}${(j.priority||0)>0?chip('Vorrang','running'):''}</td><td><div class="bar"><i style="width:${Math.round(j.progress*100)}%"></i></div>${jobProgressHtml(j,typ)}</td>
+ <td class="row"><button class="btn sec" onclick="ctx.openJob=${j.id};showJob(${j.id})">Log</button>
+ ${j.status==='queued'&&(j.priority||0)<20?`<button class="btn sec" title="Vorziehen: läuft als Nächstes; ein laufender Job derselben Art pausiert nach seinem aktuellen Video" onclick="prioJob(${j.id})">Vorziehen</button>`:''}
+ ${['queued','running'].includes(j.status)?`<button class="btn dng" onclick="cancelJob(${j.id})">Abbrechen</button>`:''}
+ ${['error','interrupted','canceled'].includes(j.status)?`<button class="btn sec" onclick="retryJob(${j.id})">Erneut</button>`:''}
+ ${fin?`<button class="btn dng" title="Job löschen" onclick="deleteJob(${j.id})">Löschen</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="5" class="mute">Keine Jobs in diesem Zustand.</td></tr>'}</table></div><div id="joblog"></div>`;
+ if(ctx.openJob) showJob(ctx.openJob);}
+async function deleteJob(id){await act(async()=>{await api('/api/jobs/'+id,'DELETE');if(ctx.openJob==id)ctx.openJob=null;await refreshJobs();renderJobs($('#main'))})}
+async function prioJob(id){await act(async()=>{await api(`/api/jobs/${id}/prioritize`,'POST',{priority:20});toast('Job vorgezogen');await refreshJobs();renderJobs($('#main'))})}
+async function retryJob(id){await act(async()=>{await api(`/api/jobs/${id}/retry`,'POST');toast('Job erneut gestartet');await refreshJobs();renderJobs($('#main'))})}
+async function clearJobs(statuses){const names=statuses.map(s=>JSTATE[s][0]).join(', ');if(!confirm(`Alle Jobs mit Status „${names}“ löschen? (Laufende und wartende bleiben unberührt.)`))return;
+ await act(async()=>{const r=await api('/api/jobs/clear','POST',{statuses});toast(r.deleted+' Job(s) gelöscht');ctx.openJob=null;await refreshJobs();renderJobs($('#main'))})}
+async function showJob(id){const j=await api('/api/jobs/'+id).catch(()=>null);const el=$('#joblog');if(!el)return;if(!j){ctx.openJob=null;el.innerHTML='';return}el.innerHTML=`<div class="card"><h2>Job ${id}: ${esc(j.title)} <button class="btn sec" onclick="ctx.openJob=null;renderJobs($('#main'))">schließen</button></h2><pre>${esc(j.log)}</pre></div>`;}
+async function cancelJob(id){await act(async()=>{const r=await api(`/api/jobs/${id}/cancel`,'POST');toast(r.ok?'Abbruch angefordert – der Job stoppt in wenigen Sekunden':'Job lässt sich nicht mehr abbrechen')});refreshJobs()}
+
+async function creatorView(m){
+ const c=(await api('/api/creators')).find(x=>x.id==ctx.cid); const vs=await api(`/api/creators/${ctx.cid}/videos`); ctx.wm=await api('/api/whisper-models');
+ m.innerHTML=`<div class="row" style="margin-bottom:12px"><button class="btn sec" onclick="ctx.cid=null;render()">← Zurück</button><h2 style="margin:0">${esc(c.name)}</h2><span class="mute">${c.videos} Videos · ${c.hours} h</span></div>
+ <div class="card"><h2>Analyse</h2><div class="form"><label class="row"><input type="checkbox" id="a_tr" checked> Transkription (Whisper)</label>
+ <label class="f">Whisper-Modell (lokal vorhanden)<select id="a_model">${(ctx.wm.models||[]).map(m=>`<option value="${m.name}" ${m.name==ctx.wm.default?'selected':''}>${m.name} (${m.size_gb} GB)</option>`).join('')||'<option value="">keins vorhanden</option>'}</select></label>
+ <label class="row"><input type="checkbox" id="a_force"> Alles neu berechnen</label>
+ <label class="row"><input type="checkbox" id="a_vision"> Visuelle Trigger (Vision-Modell)</label>
+ <label class="f">Vision-Modell (llama.cpp, mit Bildverständnis)<input id="a_vmodel" placeholder="aus config.yaml (vision.model)"></label>
+ <div class="row"><button class="btn" onclick="startProcess(${c.id},true)">Analyse starten</button>${c.failed?`<button class="btn dng" title="Nur die fehlgeschlagenen Videos erneut analysieren" onclick="retryFailedVideos(${c.id})">Fehlgeschlagene erneut (${c.failed})</button>`:''}<button class="btn sec" onclick="act(async()=>{await api('/api/creators/${c.id}/profile','POST');toast('Profil berechnet')})">Nur Profil</button>
+ <button class="btn dng" onclick="delCreator(${c.id})">Analysedaten löschen</button></div></div>
+ <p class="mute small">Quelle: ${esc(c.source_dir)} (Videos werden nie verändert oder gelöscht).</p></div>
+ <div class="card"><h2>Freigaben & Assets</h2>
+ <p class="mute small">Stimme und Gesicht dieser Person dürfen nur verwendet werden, wenn eine Zustimmung vorliegt. Trage den Nachweis ein (wer, wann, wie).</p>
+ <div class="form"><label class="row"><input type="checkbox" id="k_voice" ${c.consent_voice?'checked':''}> Stimme freigegeben</label>
+ <label class="row"><input type="checkbox" id="k_face" ${c.consent_face?'checked':''}> Gesicht freigegeben</label>
+ <label class="f wide">Nachweis<input id="k_note" value="${esc(c.consent_note||'')}" placeholder="z. B. E-Mail von Name vom 12.05.2026, Lizenz für KI-Training"></label>
+ <div><button class="btn" onclick="saveConsent(${c.id})">Freigabe speichern</button></div></div>
+ <div class="row" style="margin-top:10px"><button class="btn sec" ${c.consent_voice?'':'disabled'} onclick="runAsset(${c.id},'voice_refs')">Referenzstimme erzeugen</button>
+ <button class="btn sec" ${c.consent_voice?'':'disabled'} onclick="runAsset(${c.id},'voice_dataset')">Stimm-Datensatz exportieren</button>
+ <button class="btn sec" ${c.consent_face?'':'disabled'} onclick="runAsset(${c.id},'face_refs')">Gesichts-Referenzen extrahieren</button></div>
+ <p class="mute small">Voraussetzung: Analyse mit Transkription ist gelaufen. Ergebnisse: Stimme unter „Stimmen & Figuren“, Gesichter als Figuren-Referenzbilder, Datensätze in data/datasets/${esc(c.slug)}/.</p></div>
+ <div class="card"><h2>Videos</h2><table><tr><th>Titel</th><th>Dauer</th><th>Format</th><th>Stufen</th></tr>
+ ${vs.map(v=>`<tr class="click" onclick="ctx.vid=${v.id};render()"><td>${esc(v.title)}</td><td>${fmt(v.duration)}</td><td class="mute">${v.width?v.width+'p '+Math.round(v.fps)+'fps':'–'}</td>
+ <td>${['probe','features','visual','vision','transcribe','segment','triggers'].map(s=>chip(s,v.stages[s]||'')).join('')}${v.error?chip(v.error.slice(0,40),'error'):''}</td></tr>`).join('')}</table></div>`;}
+
+async function videoView(m){
+ const [v,s]=await Promise.all([api('/api/videos/'+ctx.vid),api(`/api/videos/${ctx.vid}/series`)]);
+ m.innerHTML=`<div class="row" style="margin-bottom:12px"><button class="btn sec" onclick="ctx.vid=null;render()">← Zurück</button><h2 style="margin:0">${esc(v.title)}</h2><span class="mute">${fmt(v.duration)}</span></div>
+ <div class="card"><div class="legend">${Object.entries(LABELS).map(([k,n])=>`<span><i style="background:${COL[k]}"></i>${n}</span>`).join('')}</div>
+ <canvas id="cv" height="170"></canvas><div class="mute small">Oben: Segmente · Mitte: Pegel (dB) · unten: Stereo-Position (links ← → rechts)</div>
+ <h3>Vorschau</h3><div class="thumbs">${v.visual?[0,1,2,3,4,5].map(i=>`<img src="/media/thumb/${v.id}/${i}.jpg" onerror="this.remove()">`).join(''):''}</div>
+ ${v.visual?`<p class="mute small">${v.visual.cuts.length} Schnitte (${v.visual.cut_rate_per_min}/min) · Helligkeit ${v.visual.brightness??'–'}</p>`:''}</div>
+ <div class="card"><h2>Segmente (${v.segments.length})</h2><table><tr><th>Zeit</th><th>Klasse</th><th>Pegel</th><th>Helligkeit</th><th>Onsets/s</th></tr>
+ ${v.segments.slice(0,400).map(g=>`<tr><td>${fmt(g.start)}–${fmt(g.end)}</td><td><span class="chip" style="border-color:${COL[g.label]}">${LABELS[g.label]}</span></td><td>${g.features.rms_db}</td><td>${Math.round(g.features.centroid)}</td><td>${g.features.onset_rate}</td></tr>`).join('')}</table></div>
+ <div class="card"><h2>Transkript ${v.transcript?`(${v.transcript.language}, ${v.transcript.words} Wörter)`:''}</h2>${v.transcript?`<pre>${esc(v.transcript.segments.map(t=>`[${fmt(t.start)}] ${t.text}`).join('\n'))}</pre>`:'<span class="mute">Nicht transkribiert.</span>'}</div>`;
+ drawTimeline($('#cv'),v,s);}
+function drawTimeline(cv,v,s){const dpr=devicePixelRatio||1,W=cv.clientWidth,H=170;cv.width=W*dpr;cv.height=H*dpr;const g=cv.getContext('2d');g.scale(dpr,dpr);
+ const D=v.duration||1,x=t=>t/D*W;
+ v.segments.forEach(sg=>{g.fillStyle=COL[sg.label];g.fillRect(x(sg.start),0,Math.max(1,x(sg.end)-x(sg.start)),44)});
+ const n=s.rms_db.length;if(n){g.strokeStyle='#9d7bff';g.beginPath();s.rms_db.forEach((d,i)=>{const px=i/n*W,py=100-(Math.max(-70,Math.min(-10,d))+70)/60*48;i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke();
+ g.strokeStyle='#5ad1c5';g.beginPath();s.pan.forEach((p,i)=>{const px=i/n*W,py=140-p*26;i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke();
+ g.strokeStyle='#2e2b47';g.beginPath();g.moveTo(0,140);g.lineTo(W,140);g.stroke();}}
+
+async function sessionView(){
+ const s=await api('/api/sessions/'+ctx.sid);const total=s.plan.length?s.plan[s.plan.length-1].start+s.plan[s.plan.length-1].duration:1;
+ const kc={tapping:'tapping',scratching:'brushing',brushing:'brushing',breath:'breath',crinkle:'texture',speech:'speech',pause:'silence'};
+ setTimeout(()=>{ctx.sessionPoll=null},0);
+ return `<div class="row" style="margin-bottom:12px"><button class="btn sec" onclick="ctx.sid=null;render()">← Zurück</button><h2 style="margin:0">${esc(s.name)}</h2>${chip(s.status,s.status.includes('ready')?'done':s.status=='error'?'error':'')}</div>
+ ${s.error?`<div class="notice" style="border-color:var(--err)">${esc(s.error)}</div>`:''}
+ <div class="card"><h2>Plan (${s.plan.length} Segmente, ${fmt(total)})</h2><div class="tl">${s.plan.map(p=>`<div style="flex:${p.duration};background:${COL[kc[p.kind]]}" title="${p.kind} ${fmt(p.start)} · ${p.duration}s ${p.spatial}"></div>`).join('')}</div>
+ <div class="row" style="margin-top:12px"><button class="btn" onclick="renderAudio(${s.id})">Audio rendern</button>
+ <label class="f">Video-Modus<select id="vmode"><option value="ambient">Ambient (schnell, CPU)</option><option value="comfyui">ComfyUI / LTX (langsam, GPU)</option></select></label>
+ <label class="f">ComfyUI-Clips<input id="vclips" type="number" min="1" max="12" value="3" style="width:80px"></label>
+ <label class="f">Figur<select id="vchar"><option value="">(ohne Referenzbild)</option>${(ctx.chars||[]).map(c=>`<option>${esc(c)}</option>`).join('')}</select></label>
+ <button class="btn sec" onclick="renderVideo(${s.id})" ${s.has_audio?'':'disabled'}>Video rendern</button>
+ <button class="btn sec" onclick="act(async()=>{await api('/api/sessions/${s.id}/replan','POST',{seed:Math.floor(Math.random()*99999)});render()})">Neu würfeln</button>
+ <button class="btn dng" onclick="delSession(${s.id})">Löschen</button></div>
+ ${s.has_audio?`<audio controls src="/media/session/${s.id}/audio.wav?${s.updated}"></audio>`:''}
+ ${s.has_video?`<video controls src="/media/session/${s.id}/video.mp4?${s.updated}"></video>`:''}</div>
+ <div class="card"><h2>Ablauf</h2><table><tr><th>Start</th><th>Art</th><th>Dauer</th><th>Raum</th><th>Pegel</th><th>Details</th></tr>
+ ${s.plan.map(p=>`<tr><td>${fmt(p.start)}</td><td>${p.kind}</td><td>${p.duration}s</td><td>${p.spatial}</td><td>${p.level_db}</td><td class="mute small">${esc(p.text||[p.trigger,p.params?.material].filter(Boolean).join(' · '))}</td></tr>`).join('')}</table></div>`;}
+
+// ---- Aktionen
+async function pickDir(){let path='';const load=async p=>{const r=await api('/api/fs?path='+encodeURIComponent(p));path=r.path;
+ $('#modal').innerHTML=`<div class="modal"><div><h2>Ordner wählen</h2><div class="row"><button class="btn sec" ${r.parent==null?'disabled':''} onclick="window._up()">↑ Hoch</button><code style="flex:1">${esc(r.path||'Laufwerke')}</code><span class="mute">${r.videos} Videos</span><button class="btn" onclick="window._ok()">Wählen</button><button class="btn sec" onclick="$('#modal').innerHTML=''">×</button></div>
+ ${r.dirs.map(d=>`<div class="dir" onclick='window._go(${JSON.stringify(d)})'>📁 ${esc(d)}</div>`).join('')}</div></div>`;window._up=()=>load(r.parent||'');};
+ window._go=load;window._ok=()=>{$('#cd').value=path;$('#modal').innerHTML=''};await act(()=>load($('#cd').value||''))}
+async function adoptFolder(folder,name){await act(async()=>{const c=await api('/api/creators','POST',{name,source_dir:folder});toast(`${c.name}: ${c.videos} Videos gefunden – Analyse per Button starten`);ctx.cid=c.id;render()})}
+async function saveConsent(id){await act(async()=>{await api(`/api/creators/${id}/consent`,'POST',{voice:$('#k_voice').checked,face:$('#k_face').checked,note:$('#k_note').value});toast('Freigabe gespeichert');render()})}
+async function runAsset(id,action){await act(async()=>{await api(`/api/creators/${id}/assets`,'POST',{action});toast('Job gestartet');refreshJobs()})}
+async function addCreator(){await act(async()=>{const c=await api('/api/creators','POST',{name:$('#cn').value,source_dir:$('#cd').value});toast(`${c.name}: ${c.videos} Videos gefunden`);ctx.cid=c.id;render()})}
+async function retryFailedVideos(id){await act(async()=>{await api(`/api/creators/${id}/process`,'POST',{only_failed:true});toast('Fehlgeschlagene Videos werden erneut analysiert');refreshJobs();render()})}
+async function retryFailedJobs(){await act(async()=>{const r=await api('/api/jobs/retry-failed','POST');toast(r.jobs.length?r.jobs.length+' fehlgeschlagene Job(s) neu gestartet':'Nichts zu wiederholen');await refreshJobs();renderJobs($('#main'))})}
+async function startProcess(id,fromForm){await act(async()=>{const o=fromForm?{transcribe:$('#a_tr').checked,whisper_model:$('#a_model').value,force:$('#a_force').checked,vision:$('#a_vision').checked,vision_model:$('#a_vmodel').value||null}:{};await api(`/api/creators/${id}/process`,'POST',o);toast('Analyse gestartet');refreshJobs()})}
+async function delCreator(id){if(confirm('Alle Analysedaten dieses Creators löschen? Die Videos bleiben unberührt.'))await act(async()=>{await api('/api/creators/'+id,'DELETE');ctx.cid=null;render()})}
+async function createSession(){await act(async()=>{const v=id=>$('#'+id).value;const sh=v('g_share');
+ const s=await api('/api/sessions','POST',{name:v('g_name'),persona:v('g_persona')||null,style_source:v('g_creator'),duration_min:+v('g_dur'),language:v('g_lang'),seed:v('g_seed')?+v('g_seed'):null,pace:+v('g_pace'),
+ theme:v('g_theme'),speech:v('g_speech')=='1',speech_share:sh?+sh:null,voice:v('g_voice')||null,relax:v('g_relax')===''?null:+v('g_relax'),style:v('g_style')||null,face_ref:v('g_face')||null,whisper:+v('g_whisper'),
+ triggers:[...document.querySelectorAll('.g_trig:checked')].map(e=>e.value).concat(document.querySelector('#g_speech').value=='1'?['speech']:[]),
+ materials:[...document.querySelectorAll('.g_mat:checked')].map(e=>e.value)});ctx.sid=s.id;render()})}
+async function renderAudio(id){await act(async()=>{await api(`/api/sessions/${id}/audio`,'POST');toast('Audio-Rendering gestartet');refreshJobs();watchSession(id)})}
+async function renderVideo(id){await act(async()=>{await api(`/api/sessions/${id}/video`,'POST',{mode:$('#vmode').value,clips:+$('#vclips').value,character:$('#vchar').value||null});toast('Video-Rendering gestartet');refreshJobs();watchSession(id)})}
+function watchSession(id){clearInterval(ctx.sw);ctx.sw=setInterval(async()=>{if(ctx.sid!=id||tab!=='gen'){clearInterval(ctx.sw);return}const s=await api('/api/sessions/'+id);if(!['rendering'].includes(s.status)&&!(await api('/api/jobs')).some(j=>['queued','running'].includes(j.status))){clearInterval(ctx.sw);render()}},3000)}
+async function delSession(id){if(confirm('Session löschen?'))await act(async()=>{await api('/api/sessions/'+id,'DELETE');ctx.sid=null;render()})}
+const b64=f=>new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result.split(',')[1]);x.readAsDataURL(f)});
+async function renamePersona(slug,old){const n=prompt('Neuer Name der Person:',old);if(!n||n===old)return;await act(async()=>{await api(`/api/personas/${slug}/rename`,'POST',{name:n});toast('Umbenannt');render()})}
+async function generatePersona(){await act(async()=>{toast('Person wird erfunden … (kann bei belegter GPU etwas dauern)');const p=await api('/api/personas/generate','POST',{hints:$('#gen_hints').value});toast(`${p.name} wurde angelegt`);render()})}
+async function makePortrait(slug){await act(async()=>{await api(`/api/personas/${slug}/portrait`,'POST',{});toast('Porträt-Job angelegt – wartet, bis die GPU frei ist');refreshJobs()})}
+async function savePersona(){await act(async()=>{const v=id=>$('#'+id).value;await api('/api/personas','POST',{name:v('p_name'),image:v('p_img'),voice:v('p_voice'),style_creator_id:v('p_style')?+v('p_style'):null,appearance:v('p_app'),triggers:[...document.querySelectorAll('.p_trig:checked')].map(e=>e.value)});toast('Person gespeichert');render()})}
+async function delPersona(slug){if(confirm('Person löschen?'))await act(async()=>{await api('/api/personas/'+slug,'DELETE');render()})}
+async function addVoice(){await act(async()=>{const fs=[...$('#v_files').files];const files=await Promise.all(fs.map(async f=>({name:f.name,data:await b64(f)})));
+ await api('/api/voices','POST',{name:$('#v_name').value,owner:$('#v_owner').value,consent:$('#v_consent').checked,files});toast('Stimme registriert');render()})}
+async function delVoice(slug){if(confirm('Stimme löschen?'))await act(async()=>{await api('/api/voices/'+slug,'DELETE');render()})}
+async function addChar(){await act(async()=>{const f=$('#c_file').files[0];if(!f)throw new Error('Bild wählen');await api('/api/characters','POST',{name:f.name,data:await b64(f),consent:$('#c_consent').checked});toast('Hochgeladen');render()})}
+
+render();refreshJobs();
+</script>
+</body>
+</html>

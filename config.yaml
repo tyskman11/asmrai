@@ -1,0 +1,64 @@
+# ASMRAI - lokale Konfiguration. Alle Pfade relativ zu diesem Ordner.
+paths:
+  data: "data"                 # DB, Arbeitsdateien, Sessions, Stimmen
+  ffmpeg: "ffmpeg"
+  seriesai: "../SeriesAI"      # Modelle (Whisper, XTTS) und Workflows werden mitgenutzt
+  ai_models: "ai_models"       # ein Unterordner = ein AI-Modell (eine Person): Bilder (Unterordner = Style) + _data (alles Erzeugte)
+
+whisper:
+  model: "large-v3"
+  cache: "../SeriesAI/models/whisper"
+  device: "auto"               # auto = GPU nur wenn >3 GB VRAM frei, sonst CPU
+  compute_type: "auto"
+  language: null               # null = automatisch erkennen
+  allow_download: false        # true = fehlende Modelle automatisch von HuggingFace laden
+
+xtts:
+  model_dir: "../SeriesAI/models/tts/xtts_v2"
+  default_speaker: "Claribel Dervla"   # eingebaute Stimme (keine echte Person geklont)
+
+llm:                           # optional: llama.cpp-Server (startet SeriesAI/start.py) schreibt Fluester-Skripte; ohne LLM gibt es Textbausteine
+  enabled: true
+  base_url: "http://127.0.0.1:11435"
+  timeout_seconds: 300
+
+inbox:                         # Eingangsordner: neue Videos werden erkannt; die Analyse startest du per Button
+  path: "input"
+  auto_analyze: false          # true = neue Videos sofort analysieren; false = nur erkennen, Analyse per Button
+  interval_seconds: 60
+  settle_seconds: 45           # Datei muss so lange unveraendert sein (Kopiervorgang abgeschlossen)
+  transcribe: true
+  whisper_model: "large-v3"
+
+vision:                        # optional: visuelle Trigger-Analyse (Keyframes -> Katalog fuer Bild-Prompts)
+  model: null                  # beliebiger Name; der Server unter base_url muss ein Vision-GGUF (+ mmproj) geladen haben
+  base_url: null               # null = llm.base_url
+  frames_per_video: 12
+  timeout_seconds: 300
+
+comfyui:                       # optional: KI-Video fuer Sessions
+  autostart: true              # start.py startet ComfyUI mit, falls es nicht schon laeuft (laeuft es, bleibt es unberuehrt)
+  vram_mode: "lowvram"         # lowvram | normalvram | highvram
+  reserve_vram: 1              # GB, die ComfyUI fuer andere Programme (Whisper/XTTS) freilaesst
+  api_url: "http://127.0.0.1:8188"
+  root: "../00 - DO NOT LIST/ComfyUI_windows_portable/ComfyUI"
+  workflow_template: "../SeriesAI/workflows/ltx23_gguf_api.json"
+  img2video_workflow_template: "../SeriesAI/workflows/ltx23_img2video_api.json"
+  poll_seconds: 3
+  timeout_seconds: 7200
+  width: 768
+  height: 448
+  steps: 32                    # wie SeriesAI (Qualitaet vor Tempo)
+  cfg: 4.5
+
+monitor:                       # Live-Statusblock im Terminal (mit direkten Adressen)
+  interval_seconds: 5          # waehrend Jobs laufen
+  idle_seconds: 30             # im Leerlauf
+
+analysis:
+  analysis_sample_rate: 22050
+  block_seconds: 0.5
+
+web:
+  host: "127.0.0.1"
+  port: 8780
