@@ -126,7 +126,7 @@ async creators(m){
  <div style="margin-top:8px"><button class="btn sec" onclick="act(async()=>{const r=await api('/api/inbox/scan','POST');toast(r.added+' neue Videos erkannt');render()})">Jetzt prüfen</button></div></div>
  <div class="card"><h2>Creator hinzufügen</h2><div class="notice">Nur Material verwenden, an dem du die Rechte hast oder für das eine Erlaubnis vorliegt. Die Videos bleiben unverändert in ihrem Ordner; gespeichert werden nur Analysewerte.</div>
  <div class="form"><label class="f">Name<input id="cn" placeholder="z. B. Poki ASMR"></label>
- <label class="f wide">Ordner mit Videos<span class="row"><input id="cd" style="flex:1" placeholder="C:\\AI\\ASMRAI\\input\\…"><button class="btn sec" onclick="pickDir()">Durchsuchen…</button></span></label>
+ <label class="f wide">Ordner mit Videos<span class="row"><input id="cd" style="flex:1" readonly placeholder="Über „Durchsuchen…“ einen NAS-Ordner wählen"><button class="btn sec" onclick="pickDir()">Durchsuchen…</button></span><small class="mute">Nur über den NAS-Ordnerwähler auswählbar.</small></label>
  <div><button class="btn" onclick="addCreator()">Hinzufügen & scannen</button></div></div></div>
  <div class="grid">${cs.map(c=>`<div class="card"><h2>${esc(c.name)}</h2><div class="mute small">${esc(c.source_dir)}</div>
  <p>${c.videos} Videos · ${c.hours} h<br>Analysiert: ${c.analyzed} · Transkribiert: ${c.transcribed}${c.videos>c.analyzed?` · <b style="color:var(--warn)">${c.videos-c.analyzed} neu/offen</b>`:''}</p>
@@ -384,11 +384,11 @@ async function sessionView(){
 async function pickDir(){let path='';const load=async p=>{const r=await api('/api/fs?path='+encodeURIComponent(p));path=r.path;
  $('#modal').innerHTML=`<div class="modal"><div><h2>Ordner wählen</h2><div class="row"><button class="btn sec" ${r.parent==null?'disabled':''} onclick="window._up()">↑ Hoch</button><code style="flex:1">${esc(r.path||'Laufwerke')}</code><span class="mute">${r.videos} Videos</span><button class="btn" onclick="window._ok()">Wählen</button><button class="btn sec" onclick="$('#modal').innerHTML=''">×</button></div>
  ${r.dirs.map(d=>`<div class="dir" onclick='window._go(${JSON.stringify(d)})'>📁 ${esc(d)}</div>`).join('')}</div></div>`;window._up=()=>load(r.parent||'');};
- window._go=load;window._ok=()=>{$('#cd').value=path;$('#modal').innerHTML=''};await act(()=>load($('#cd').value||''))}
+ window._go=load;window._ok=()=>{$('#cd').value=path;ctx.creatorDir=path;$('#modal').innerHTML=''};await act(()=>load($('#cd').value||''))}
 async function adoptFolder(folder,name){await act(async()=>{const c=await api('/api/creators','POST',{name,source_dir:folder});toast(`${c.name}: ${c.videos} Videos gefunden – Analyse per Button starten`);ctx.cid=c.id;render()})}
 async function saveConsent(id){await act(async()=>{await api(`/api/creators/${id}/consent`,'POST',{voice:$('#k_voice').checked,face:$('#k_face').checked,note:$('#k_note').value});toast('Freigabe gespeichert');render()})}
 async function runAsset(id,action){await act(async()=>{await api(`/api/creators/${id}/assets`,'POST',{action});toast('Job gestartet');refreshJobs()})}
-async function addCreator(){await act(async()=>{const c=await api('/api/creators','POST',{name:$('#cn').value,source_dir:$('#cd').value});toast(`${c.name}: ${c.videos} Videos gefunden`);ctx.cid=c.id;render()})}
+async function addCreator(){await act(async()=>{const folder=$('#cd').value;if(!folder||folder!==ctx.creatorDir)throw new Error('Bitte den Videoordner über „Durchsuchen…“ im NAS auswählen.');const c=await api('/api/creators','POST',{name:$('#cn').value,source_dir:folder});toast(`${c.name}: ${c.videos} Videos gefunden`);ctx.cid=c.id;render()})}
 async function retryFailedVideos(id){await act(async()=>{await api(`/api/creators/${id}/process`,'POST',{only_failed:true});toast('Fehlgeschlagene Videos werden erneut analysiert');refreshJobs();render()})}
 async function retryFailedJobs(){await act(async()=>{const r=await api('/api/jobs/retry-failed','POST');toast(r.jobs.length?r.jobs.length+' fehlgeschlagene Job(s) neu gestartet':'Nichts zu wiederholen');await refreshJobs();renderJobs($('#main'))})}
 async function startProcess(id,fromForm){await act(async()=>{const o=fromForm?{transcribe:$('#a_tr').checked,whisper_model:$('#a_model').value,force:$('#a_force').checked,vision:$('#a_vision').checked,vision_model:$('#a_vmodel').value||null}:{};await api(`/api/creators/${id}/process`,'POST',o);toast('Analyse gestartet');refreshJobs()})}

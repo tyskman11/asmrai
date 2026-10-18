@@ -2,6 +2,18 @@
 
 Dieses Projekt verwendet [Semantic Versioning](https://semver.org/lang/de/).
 
+## 0.1.2 – 18.10.2026
+
+### Behoben
+
+- Ein zweiter Start erkennt die bereits aktive lokale WebUI und beendet sich sofort, statt eine konkurrierende SQLite-WAL-Verbindung auf dem NAS zu öffnen.
+- `doctor` fragt bei einer laufenden Instanz deren System-Check ab und benötigt keine zweite Datenbankverbindung.
+- Creator-Videoquellen sind auf den konfigurierten NAS-Stamm begrenzt.
+
+### Geändert
+
+- Videoordner können im Dashboard nur noch über den NAS-Ordnerwähler ausgewählt werden; die Texteingabe ist gesperrt.
+
 ## 0.1.1 – 17.10.2026
 
 ### Behoben

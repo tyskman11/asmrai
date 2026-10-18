@@ -43,8 +43,12 @@ class App:
     def add_creator(self, name: str, source_dir: str, notes: str = "") -> dict:
         name = name.strip()
         if not name: raise ValueError("Name fehlt.")
-        folder = Path(source_dir.strip().strip('"'))
+        folder = Path(source_dir.strip().strip('"')).resolve()
         if not folder.is_dir(): raise ValueError(f"Ordner nicht gefunden: {folder}")
+        nas_root = self.config.nas_root
+        if nas_root:
+            try: folder.relative_to(nas_root.resolve())
+            except ValueError: raise ValueError(f"Creator-Ordner muss auf dem lokalen NAS liegen ({nas_root}).") from None
         slug = pipeline.slugify(name)
         if self.db.one("SELECT 1 AS x FROM creators WHERE slug=?", (slug,)): raise ValueError("Creator existiert bereits.")
         cid = self.db.execute("INSERT INTO creators(slug,name,source_dir,notes,created) VALUES(?,?,?,?,?)", (slug, name, str(folder), notes, time.time()))

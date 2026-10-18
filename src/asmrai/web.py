@@ -42,16 +42,20 @@ class Api:
 
     @route("GET", "/api/fs")
     def fs(self, q, body):
-        """Ordner-Auswahl: listet nur Unterverzeichnisse (lokale Bedienung)."""
+        """Ordner-Auswahl: ausschliesslich innerhalb des konfigurierten NAS-Stamms."""
         raw = (q.get("path") or [""])[0]
+        root = self.app.config.nas_root
+        if root is None: raise ValueError("Kein NAS-Stamm konfiguriert.")
+        root = root.resolve()
         if not raw:
-            drives = [f"{c}:\\" for c in "CDEFGHIJKLMNOPQRSTUVWXYZ" if os.path.exists(f"{c}:\\")] if os.name == "nt" else ["/"]
-            return {"path": "", "parent": None, "dirs": drives, "videos": 0}
-        path = Path(raw)
+            path = root
+        else: path = Path(raw).resolve()
         if not path.is_dir(): raise ValueError("Kein Ordner")
+        try: path.relative_to(root)
+        except ValueError: raise ValueError("Ordner liegt nicht auf dem erlaubten NAS.") from None
         dirs = sorted(str(p) for p in path.iterdir() if p.is_dir() and not p.name.startswith("$"))[:500] if os.access(path, os.R_OK) else []
         count = sum(1 for p in path.rglob("*") if p.suffix.lower() in {".mp4", ".mkv", ".mov", ".webm", ".avi", ".m4v"}) if len(dirs) < 500 else 0
-        return {"path": str(path), "parent": str(path.parent) if path.parent != path else "", "dirs": dirs, "videos": count}
+        return {"path": str(path), "parent": str(path.parent) if path != root else None, "dirs": dirs, "videos": count, "root": str(root)}
 
     @route("GET", "/api/logs")
     def logs(self, q, body):

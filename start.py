@@ -14,6 +14,7 @@ ffmpeg wird bei Bedarf nach ./runtime/ffmpeg geladen. Caches/Temp liegen in ./ru
 from __future__ import annotations
 
 import os
+import json
 import re
 import shutil
 import socket
@@ -211,6 +212,20 @@ def web_address() -> str:
     return f"http://{host.group(1) if host else '127.0.0.1'}:{port.group(1) if port else '8780'}"
 
 
+def asmrai_api(path: str, timeout: float = 2.0) -> dict | None:
+    """Antwort der bereits laufenden lokalen WebUI oder None.
+
+    Dadurch startet ein zweiter Aufruf weder einen zweiten Server noch eine
+    konkurrierende SQLite-WAL-Verbindung auf dem NAS.
+    """
+    try:
+        with urllib.request.urlopen(web_address().rstrip("/") + path, timeout=timeout) as response:
+            data = json.load(response)
+        return data if isinstance(data, dict) else None
+    except (OSError, ValueError, urllib.error.URLError):
+        return None
+
+
 def config_value(section: str, key: str, default: str) -> str:
     """Einfacher Zugriff auf 'section: / key: wert' in config.yaml ohne PyYAML (der Starter nutzt nur die Standardbibliothek)."""
     path = ROOT / "config.yaml"
@@ -310,6 +325,15 @@ def main() -> int:
     args = [a for a in args if a not in flags]
     if args[0] == "setup":
         setup(core_only="--core" in flags, assume_yes="--yes" in flags); return 0
+    # Auf dem NAS kann ein zweiter Prozess beim Oeffnen der WAL-Datenbank
+    # minutenlang blockieren. Die aktive lokale Instanz ist die Autoritaet.
+    if args[0] == "serve" and asmrai_api("/api/overview") is not None:
+        print(f"ASMRAI laeuft bereits: {web_address()}/", flush=True); return 0
+    if args[0] == "doctor":
+        if report := asmrai_api("/api/doctor", timeout=5):
+            print("ASMRAI laeuft bereits – System-Check der aktiven Instanz:", flush=True)
+            for key, value in report.items(): print(f"{key:18} {value or 'FEHLT'}", flush=True)
+            return 0
     ensure_ffmpeg()
     python = find_python()
     if python is None: python = setup(core_only="--core" in flags, assume_yes="--yes" in flags)

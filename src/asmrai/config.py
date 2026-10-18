@@ -63,3 +63,13 @@ class Config:
         ffmpeg = Path(self.ffmpeg)
         sibling = ffmpeg.with_name("ffprobe" + ffmpeg.suffix)
         return str(sibling) if sibling.exists() else (shutil.which("ffprobe") or "ffprobe")
+
+    @property
+    def nas_root(self) -> Path | None:
+        """Optionaler NAS-Stamm fuer Creator-Quellen.
+
+        Fehlt die Einstellung, bleibt die Klasse fuer isolierte Tests und
+        portable Nutzung offen. Die ausgelieferte Konfiguration setzt sie.
+        """
+        value = self.get("paths", "nas_root")
+        return _resolve(str(value)) if value else None

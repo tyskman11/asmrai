@@ -4,6 +4,7 @@ paths:
   ffmpeg: "ffmpeg"
   seriesai: "../SeriesAI"      # Modelle (Whisper, XTTS) und Workflows werden mitgenutzt
   ai_models: "ai_models"       # ein Unterordner = ein AI-Modell (eine Person): Bilder (Unterordner = Style) + _data (alles Erzeugte)
+  nas_root: "../../../../.."    # ausschliesslich hierunter duerfen Creator-Videoordner liegen (lokaler NAS-Pfad)
 
 whisper:
   model: "large-v3"

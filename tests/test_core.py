@@ -100,6 +100,15 @@ def test_creator_roundtrip_never_touches_sources(app, tmp_path):
     assert (src / "a.mp4").exists() and app.creators() == []
 
 
+def test_creator_source_is_limited_to_configured_nas_root(tmp_path):
+    nas = tmp_path / "nas"; allowed = nas / "videos"; outside = tmp_path / "outside"
+    allowed.mkdir(parents=True); outside.mkdir()
+    cfg = Config({"paths": {"data": str(tmp_path / "data"), "nas_root": str(nas)}}); guarded = App(cfg)
+    assert guarded.add_creator("Allowed", str(allowed))["source_dir"] == str(allowed.resolve())
+    with pytest.raises(ValueError, match="lokalen NAS"):
+        guarded.add_creator("Outside", str(outside))
+
+
 def test_session_plan_and_web_guards(app):
     session = app.create_session({"duration_min": 2, "seed": 4, "speech": False})
     assert session["plan"] and session["status"] == "planned"
