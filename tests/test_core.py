@@ -112,6 +112,7 @@ def test_creator_source_is_limited_to_configured_nas_root(tmp_path):
 def test_session_plan_and_web_guards(app):
     session = app.create_session({"duration_min": 2, "seed": 4, "speech": False})
     assert session["plan"] and session["status"] == "planned"
+    app.config.raw.setdefault("web", {})["allowed_origins"] = ["https://tyskman11.duckdns.org"]
     server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(app, "127.0.0.1", 0)); port = server.server_address[1]
     server.RequestHandlerClass = make_handler(app, "127.0.0.1", port); threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
@@ -124,6 +125,8 @@ def test_session_plan_and_web_guards(app):
         cross = urllib.request.Request(base + "/api/creators", data=b"{}", method="POST", headers={"Origin": "http://evil.example", "Content-Type": "application/json"})
         with pytest.raises(urllib.error.HTTPError) as err: urllib.request.urlopen(cross)
         assert err.value.code == 403
+        proxied = urllib.request.Request(base + "/api/jobs/diagnose", data=b"{}", method="POST", headers={"Origin": "https://tyskman11.duckdns.org", "Content-Type": "application/json"})
+        assert urllib.request.urlopen(proxied).status == 200
     finally:
         server.shutdown()
 

@@ -254,6 +254,13 @@ class Api:
 def make_handler(app: App, host: str, port: int):
     api = Api(app)
     allowed_hosts = {f"{host}:{port}", f"localhost:{port}", f"127.0.0.1:{port}"}
+    configured_origins = app.config.get("web", "allowed_origins", [])
+    if isinstance(configured_origins, str):
+        configured_origins = [item.strip() for item in configured_origins.split(",") if item.strip()]
+    allowed_origins = {
+        (urlparse(str(origin)).netloc or str(origin)).lower()
+        for origin in configured_origins
+    }
 
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
@@ -275,7 +282,10 @@ def make_handler(app: App, host: str, port: int):
             """Schuetzt gegen DNS-Rebinding und fremde Webseiten (CSRF) bei lokalem Betrieb."""
             if self.headers.get("Host", "") not in allowed_hosts: self._json(403, {"error": "Host nicht erlaubt"}); return False
             origin = self.headers.get("Origin")
-            if self.command != "GET" and origin and urlparse(origin).netloc not in allowed_hosts: self._json(403, {"error": "Origin nicht erlaubt"}); return False
+            # A reverse proxy keeps the external Origin but forwards Host as
+            # 127.0.0.1.  Keep CSRF protection while explicitly allowing only
+            # configured public origins for that deployment.
+            if self.command != "GET" and origin and urlparse(origin).netloc.lower() not in allowed_hosts | allowed_origins: self._json(403, {"error": "Origin nicht erlaubt"}); return False
             return True
 
         _static_cache: dict = {}

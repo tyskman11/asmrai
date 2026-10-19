@@ -63,3 +63,7 @@ analysis:
 web:
   host: "127.0.0.1"
   port: 8780
+  # Öffentliche Adresse hinter dem NAS-Proxy. Nur diese Origin darf API-Aktionen
+  # auslösen; alle fremden Webseiten bleiben durch den CSRF-Schutz blockiert.
+  allowed_origins:
+    - "https://tyskman11.duckdns.org"
