@@ -2,6 +2,13 @@
 
 Dieses Projekt verwendet [Semantic Versioning](https://semver.org/lang/de/).
 
+## 0.1.3 – 19.10.2026
+
+### Behoben
+
+- Der NAS-Pool überspringt beim Linux-Start die lokale Windows-Portable-Version von ComfyUI. Dadurch startet der ASMRAI-Webserver auch dann, wenn ComfyUI nur auf dem Windows-Rechner verfügbar ist.
+- Der ComfyUI-Watchdog läuft ausschließlich unter Windows und kann den NAS-Server nicht mehr durch wiederholte Fehlstarts blockieren.
+
 ## 0.1.2 – 18.10.2026
 
 ### Behoben

@@ -274,6 +274,13 @@ def comfyui_launching() -> bool:
 
 def ensure_comfyui() -> subprocess.Popen | None:
     """Laeuft ComfyUI schon -> nichts tun. Sonst als Kindprozess starten (Ausgabe mit [ComfyUI] im selben Terminal)."""
+    # Der Pool kann ASMRAI direkt auf dem Linux-NAS starten. Die konfigurierte
+    # ComfyUI-Installation ist jedoch eine Windows-Portable-Version; ihr
+    # python.exe laesst sich dort nicht ausfuehren und darf den Webserverstart
+    # deshalb nicht verhindern.
+    if os.name != "nt":
+        print("[ComfyUI] NAS/Linux: Windows-ComfyUI wird nicht lokal gestartet.", flush=True)
+        return None
     if config_value("comfyui", "autostart", "true").lower() not in ("true", "yes", "1"):
         return None
     if comfyui_running():
@@ -350,7 +357,7 @@ def main() -> int:
         return 0
     child = ensure_comfyui() if args[0] == "serve" else None
     holder = {"child": child}
-    if args[0] == "serve" and config_value("comfyui", "autostart", "true").lower() in ("true", "yes", "1"):
+    if args[0] == "serve" and os.name == "nt" and config_value("comfyui", "autostart", "true").lower() in ("true", "yes", "1"):
         def watchdog() -> None:
             """Wie in SeriesAI: ComfyUI neu starten, wenn es weder antwortet noch gerade hochfaehrt (nie ein zweites parallel)."""
             while True:
