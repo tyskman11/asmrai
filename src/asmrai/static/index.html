@@ -190,7 +190,7 @@ async personas(m){const [ps,cs,vs,chars,md]=await Promise.all([api('/api/persona
  <p class="mute small">Stimme: ${esc(p.voice||'Standard')} · Stil: ${esc(p.style_creator||'Standard')}${p.voice_model?` · Stimm-Modell: ${esc(p.voice_model)}`:''}${p.look_model?` · Look-Modell: ${esc(p.look_model)}`:''}</p>
  <div>${p.triggers.map(t=>chip(t)).join('')||'<span class="mute small">alle Trigger</span>'}</div>
  <div class="row" style="margin-top:10px"><button class="btn" onclick="ctx.persona='${p.slug}';go('gen')">Session mit ${esc(p.name)}</button>
- <button class="btn sec" onclick="renamePersona('${p.slug}','${esc(p.name).replace(/'/g,'')}')">Umbenennen</button>
+ <button class="btn sec" onclick="renamePersona('${p.slug}','${esc(p.name).split(String.fromCharCode(39)).join('')}')">Umbenennen</button>
  <button class="btn sec" onclick="makePortrait('${p.slug}')">${p.image?'Porträt neu erzeugen':'Porträt erzeugen'}</button><button class="btn dng" onclick="delPersona('${p.slug}')">Löschen</button></div></div>`).join('')}</div>
  <div class="card"><h2>Person anlegen / ändern</h2><div class="form"><label class="f">Name<input id="p_name"></label>
  <label class="f">Referenzbild (eigene/KI-Figur)<select id="p_img"><option value="">(keins)</option>${chars.map(c=>`<option>${esc(c)}</option>`).join('')}</select></label>
