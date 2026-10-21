@@ -24,6 +24,12 @@ class App:
         self.db = Database(self.config.db_path)
         rebased = self.db.rebase_paths(ROOT)
         if rebased: logging.getLogger("asmrai").info("%d gespeicherte Pfade auf den aktuellen Projektordner umgestellt (%s)", rebased, ROOT)
+        # Bis 0.1.3 wurde ein nicht konfiguriertes, optionales Vision-Modell
+        # fälschlich als Video-Fehler gespeichert. Alte Einträge migrieren,
+        # damit vollständig analysierte Creator nicht als fehlerhaft erscheinen.
+        if not self.config.get("vision", "model"):
+            self.db.execute("UPDATE stages SET state='skipped', detail='kein Vision-Modell konfiguriert (optional)' "
+                            "WHERE stage='vision' AND state='error' AND detail LIKE 'kein Vision-Modell konfiguriert%'")
         self.jobs = JobManager(self.db)
         self.watcher = None   # wird von web.serve gesetzt
         self.jobs.register("process", lambda ctx, p: pipeline.process_creator(self.config, self.db, ctx, p))

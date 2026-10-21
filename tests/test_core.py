@@ -163,7 +163,7 @@ def test_vision_prompts_use_catalog_without_person_description():
     assert vision.build_prompt("tapping", None, random.Random(1))   # ohne Katalog trotzdem sinnvoll
 
 
-def test_vision_stage_without_model_reports_error(app, tmp_path, monkeypatch):
+def test_vision_stage_without_model_is_skipped(app, tmp_path, monkeypatch):
     from asmrai import pipeline
     src = tmp_path / "v"; src.mkdir(); (src / "a.mp4").write_bytes(b"x")
     creator = app.add_creator("V", str(src)); video = app.db.one("SELECT * FROM videos WHERE creator_id=?", (creator["id"],))
@@ -175,7 +175,7 @@ def test_vision_stage_without_model_reports_error(app, tmp_path, monkeypatch):
         def progress(self, *a): pass
     video = app.db.one("SELECT * FROM videos WHERE id=?", (video["id"],))
     pipeline.process_video(app.config, app.db, video, Ctx(), {"vision": True})
-    assert app.db.stages(video["id"])["vision"]["state"] == "error"
+    assert app.db.stages(video["id"])["vision"]["state"] == "skipped"
 
 
 def test_persona_drives_session_and_checks_consent(app):

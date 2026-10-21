@@ -147,7 +147,10 @@ def process_video(config: Config, db: Database, video: dict, ctx: JobContext, op
         from . import vision
         model = options.get("vision_model") or config.get("vision", "model")
         if not model:
-            db.set_stage(vid, "vision", "error", "kein Vision-Modell konfiguriert (config.yaml vision.model)")
+            # Vision ist optional. Ein deaktiviertes Modell ist kein Fehler der
+            # Videoanalyse und darf deshalb keinen "erneut analysieren"-Hinweis
+            # erzeugen.
+            db.set_stage(vid, "vision", "skipped", "kein Vision-Modell konfiguriert (optional)")
             note("vision: kein Vision-Modell konfiguriert (config.yaml vision.model) - uebersprungen", logging.WARNING)
         else:
             def vision_stage() -> str:
