@@ -55,9 +55,10 @@ let tab=localStorage.tab||'dash', ctx={}, pollTimer=null;
 // Der öffentliche NAS-Proxy setzt vor absolute /volume*-Pfade seinen eigenen
 // Zugriffspfad. Für die Anzeige und den NAS-Ordnerwähler brauchen wir wieder
 // den echten lokalen NAS-Pfad, nicht die öffentliche URL-Komponente.
-const proxyPrefix=location.pathname.endsWith('/')?location.pathname.slice(0,-1):location.pathname;
+const slash=String.fromCharCode(47);
+const proxyPrefix=location.pathname.endsWith(slash)?location.pathname.slice(0,-1):location.pathname;
 function localNasPath(value){
- if(typeof value==='string')return value.startsWith(proxyPrefix+'/volume')?value.slice(proxyPrefix.length):value;
+ if(typeof value==='string')return value.startsWith(proxyPrefix+slash+'volume')?value.slice(proxyPrefix.length):value;
  if(Array.isArray(value))return value.map(localNasPath);
  if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,localNasPath(v)]));
  return value;
