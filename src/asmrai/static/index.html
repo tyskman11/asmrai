@@ -52,9 +52,19 @@ const TABS={dash:'Übersicht',creators:'Creators',profile:'Stil-Profil',personas
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $=s=>document.querySelector(s);
 let tab=localStorage.tab||'dash', ctx={}, pollTimer=null;
+// Der öffentliche NAS-Proxy setzt vor absolute /volume*-Pfade seinen eigenen
+// Zugriffspfad. Für die Anzeige und den NAS-Ordnerwähler brauchen wir wieder
+// den echten lokalen NAS-Pfad, nicht die öffentliche URL-Komponente.
+const proxyPrefix=location.pathname.endsWith('/')?location.pathname.slice(0,-1):location.pathname;
+function localNasPath(value){
+ if(typeof value==='string')return value.startsWith(proxyPrefix+'/volume')?value.slice(proxyPrefix.length):value;
+ if(Array.isArray(value))return value.map(localNasPath);
+ if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,localNasPath(v)]));
+ return value;
+}
 async function api(path,method='GET',body){
   const r=await fetch(path,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
-  const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||r.statusText); return j;}
+  const j=localNasPath(await r.json().catch(()=>({}))); if(!r.ok) throw new Error(j.error||r.statusText); return j;}
 
 // ---- Fortschritt/ETA und Fehleranalyse (nur fehlgeschlagene Jobs) ----
 const fmtDur=s=>{s=Math.max(0,Math.round(s));if(s<60)return s+' s';const m=Math.round(s/60);return m<60?m+' min':Math.floor(m/60)+' h '+(m%60)+' min'};
