@@ -11,3 +11,7 @@ ai_models/
 runtime/
 
 pool/
+.env
+.env.*
+*.db
+*.db-*

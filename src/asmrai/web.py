@@ -209,7 +209,17 @@ class Api:
     @route("GET", "/api/jobs")
     def jobs(self, q, body):
         limit = max(1, min(int((q.get("limit") or ["60"])[0]), 1000))
-        return [{k: v for k, v in row.items() if k != "log"} for row in self.app.db.query("SELECT * FROM jobs ORDER BY id DESC LIMIT ?", (limit,))]
+        # The full log is intentionally only fetched for an opened job.  The
+        # list still needs the actual cause, otherwise a job can look normal
+        # while an optional pipeline stage has already failed.
+        result = []
+        for row in self.app.db.query("SELECT * FROM jobs ORDER BY id DESC LIMIT ?", (limit,)):
+            log_text = row.get("log") or ""
+            errors = [line for line in log_text.splitlines() if "FEHLER" in line.upper()]
+            item = {k: v for k, v in row.items() if k != "log"}
+            item["error_summary"] = errors[-1][:500] if errors else None
+            result.append(item)
+        return result
 
     @route("GET", r"/api/jobs/(\d+)")
     def job(self, q, body, jid): return self.app.db.one("SELECT * FROM jobs WHERE id=?", (int(jid),)) or (404, {"error": "nicht gefunden"})

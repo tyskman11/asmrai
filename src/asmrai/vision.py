@@ -48,6 +48,22 @@ def _post(config: Config, model: str, image: bytes) -> dict:
         return json.loads(json.loads(response.read())["choices"][0]["message"]["content"])
 
 
+def require_service(config: Config) -> str:
+    """Fail one job clearly when the local VLM is unavailable."""
+    base = (config.get("vision", "base_url") or config.get("llm", "base_url")).rstrip("/")
+    try:
+        request = Request(base + "/health", headers={"Accept": "application/json"})
+        with urlopen(request, timeout=5) as response:
+            if not 200 <= response.status < 300:
+                raise RuntimeError(f"HTTP {response.status}")
+    except Exception as error:  # noqa: BLE001 - surface the actionable connection reason
+        raise RuntimeError(
+            f"Vision-Dienst ist auf {base} nicht bereit ({error}). "
+            "In SeriesAI zuerst das Vision-Modell fertig herunterladen und den Dienst starten."
+        ) from error
+    return base
+
+
 def clean_label(raw: dict) -> dict:
     """Begrenzt Modellausgaben auf das kontrollierte Vokabular."""
     triggers = [t for t in raw.get("triggers", []) if isinstance(t, str) and t in TRIGGERS and t != "none"][:3]

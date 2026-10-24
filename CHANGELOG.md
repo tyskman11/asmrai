@@ -2,6 +2,13 @@
 
 Dieses Projekt verwendet [Semantic Versioning](https://semver.org/lang/de/).
 
+## 0.1.4 – 21.10.2026
+
+### Hinzugefügt
+
+- Die Creator-Pipeline analysiert zusätzlich Video-Keyframes mit einem lokalen Vision-Modell und erstellt daraus einen Katalog für sichtbare Trigger, Requisiten, Bildausschnitt, Licht und Umgebung.
+- ASMRAI verwendet den separat gestarteten SeriesAI-Vision-Dienst auf dem NAS; Bild- und Videoanalyse verlassen das lokale System nicht.
+
 ## 0.1.3 – 19.10.2026
 
 ### Behoben

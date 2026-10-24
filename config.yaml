@@ -31,9 +31,9 @@ inbox:                         # Eingangsordner: neue Videos werden erkannt; die
   transcribe: true
   whisper_model: "large-v3"
 
-vision:                        # optional: visuelle Trigger-Analyse (Keyframes -> Katalog fuer Bild-Prompts)
-  model: null                  # beliebiger Name; der Server unter base_url muss ein Vision-GGUF (+ mmproj) geladen haben
-  base_url: null               # null = llm.base_url
+vision:                        # lokaler Vision-Dienst aus SeriesAI (Keyframes -> Katalog fuer Bild-Prompts)
+  model: "Qwen2.5-VL-3B-Instruct-Q4_K_M.gguf"
+  base_url: "http://127.0.0.1:11436"
   frames_per_video: 12
   timeout_seconds: 300
 

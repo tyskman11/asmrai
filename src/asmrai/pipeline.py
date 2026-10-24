@@ -143,7 +143,10 @@ def process_video(config: Config, db: Database, video: dict, ctx: JobContext, op
         run("visual", visual_stage)
     ctx.check()
 
-    if options.get("vision") and (force or not _done(db, vid, "vision")):
+    # Sobald ein lokales Vision-Modell konfiguriert ist, gehoert Bildanalyse zur
+    # Standard-Pipeline. Ein explizites false aus dem Dashboard bleibt moeglich.
+    vision_enabled = options.get("vision", bool(config.get("vision", "model")))
+    if vision_enabled and (force or not _done(db, vid, "vision")):
         from . import vision
         model = options.get("vision_model") or config.get("vision", "model")
         if not model:
@@ -210,6 +213,14 @@ def process_creator(config: Config, db: Database, ctx: JobContext, params: dict)
     ids = params.get("video_ids")
     videos = db.query("SELECT * FROM videos WHERE creator_id=? ORDER BY id", (creator["id"],))
     if ids: videos = [v for v in videos if v["id"] in set(ids)]
+    # A missing VLM used to be swallowed per video, leaving a misleading
+    # successful job and hundreds of identical stage errors. Test it once at
+    # job start so the dashboard can show one precise, retryable reason.
+    vision_requested = params.get("vision", bool(config.get("vision", "model")))
+    model = params.get("vision_model") or config.get("vision", "model")
+    if vision_requested and model and videos:
+        from . import vision
+        vision.require_service(config)
     started, failed = time.time(), 0
     alog.info("--- Analyse %s: %d Videos, Optionen %s ---", creator["name"], len(videos), {k: v for k, v in params.items() if k != "video_ids"})
     for index, video in enumerate(videos):
